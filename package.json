@@ -1,0 +1,32 @@
+{
+  "name": "rateup",
+  "version": "1.0.0",
+  "description": "Proyecto de 'Desarrollo De Software'",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc -p ./tsconfig.json",
+    "start:dev": "tsc-watch --noClear -p ./tsconfig.json --onSuccess \"node ./dist/app.js\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NiFoox/RateUp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/NiFoox/RateUp/issues"
+  },
+  "homepage": "https://github.com/NiFoox/RateUp#readme",
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.1.0",
+    "tsc-watch": "^7.1.1",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
