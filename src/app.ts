@@ -1,11 +1,11 @@
 import express from 'express';
+import { gameRoutes } from './game/game.routes.js'
 
 const app = express();
+app.use(express.json());
 const PORT = 3000;
 
-app.get('/api/status', (req, res) => {
-  res.json({ status: 'Prueba funcionando' });
-});
+app.use('/games', gameRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
