@@ -12,8 +12,7 @@ export class GameController {
       return res.status(400).json({ error: 'Faltan campos obligatorios' });
     }
 
-    const exists = await repo.findByName(name);
-    if (exists) {
+    if (await repo.findByName(name)) {
       return res.status(400).json({ error: 'El nombre ya existe' });
     }
 
@@ -22,22 +21,33 @@ export class GameController {
     res.status(201).json(saved);
   }
 
+  async get(req: Request, res: Response) {
+    const id = Number(req.params.id);
+    const game = await repo.findById(id);
+    return game
+      ? res.json(game)
+      : res.status(404).json({ error: 'Juego no encontrado' });
+  }
+
+  async getAll(req: Request, res: Response) {
+    const games = await repo.getAll();
+    res.json(games);
+  }
+
   async update(req: Request, res: Response) {
     const id = Number(req.params.id);
-    const data = req.body as Partial<Game>;
+    const data = req.body;
     const updated = await repo.update(id, data);
-    if (!updated) {
-      return res.status(404).json({ error: 'Juego no encontrado' });
-    }
-    res.json(updated);
+    return updated
+      ? res.json(updated)
+      : res.status(404).json({ error: 'Juego no encontrado' });
   }
 
   async delete(req: Request, res: Response) {
     const id = Number(req.params.id);
     const deleted = await repo.delete(id);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Juego no encontrado' });
-    }
-    res.status(204).send();
+    return deleted
+      ? res.status(204).send()
+      : res.status(404).json({ error: 'Juego no encontrado' });
   }
 }
