@@ -1,22 +1,32 @@
 import { Request, Response } from 'express';
 import { ReviewMongoRepository } from './review.mongodb.repository.js';
-
+import { Review } from './review.entity.js';
 const repository = new ReviewMongoRepository();
 
 export class ReviewController {
-    async create(req: Request, res: Response): Promise<void> {
-        try {
-            const review = req.body;
-            const createdReview = await repository.create(review);
+  async create(req: Request, res: Response): Promise<void> {
+    try {
+      const { gameTitle, content, score, author } = req.body;
+      
+      // Validación básica de campos obligatorios
+      if (!gameTitle || !content || typeof score !== 'number') {
+        res.status(400).json({ message: 'Faltan campos obligatorios o son inválidos' });
+        return;
+      }
 
-            if (createdReview) {
-                res.status(201).json(createdReview);
-            } else {
-                res.status(400).json({ message: 'Error creating review' });
-            }
-        } catch (error) {
-            res.status(500).json({ message: 'Internal server error', error });
-        }
+      // Crear instancia de la entidad Review
+      const review = new Review(gameTitle, content, score, author);
+      // Guardar en la base de datos usando el repositorio
+      const createdReview = await repository.create(review);
+
+      if (createdReview) {
+        res.status(201).json(createdReview);
+      } else {
+        res.status(400).json({ message: 'Error al crear la reseña' });
+      }
+
+    } catch (error) {
+      res.status(500).json({ message: 'Error interno del servidor', error });
     }
+  }
 }
-

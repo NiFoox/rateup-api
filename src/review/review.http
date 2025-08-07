@@ -1,0 +1,12 @@
+POST http://localhost:3000/api/reviews
+Content-Type: application/json
+
+{
+  "review": {
+    "title": "Great Product!",
+    "content": "I really enjoyed using this product. It exceeded my expectations in every way.",
+    "rating": 5,
+    "product_id": "12345",
+    "user_id": "67890"
+  }
+}
