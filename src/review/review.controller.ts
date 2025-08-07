@@ -1,22 +1,20 @@
 import { Request, Response } from 'express';
-import { ReviewMongoRepository } from './review.mongodb.repository.js';
+import { ReviewPostgresRepository } from './review.postgres.repository.js';
 import { Review } from './review.entity.js';
-const repository = new ReviewMongoRepository();
+const repository = new ReviewPostgresRepository();
 
 export class ReviewController {
   async create(req: Request, res: Response): Promise<void> {
     try {
       const { gameTitle, content, score, author } = req.body;
       
-      // Validación básica de campos obligatorios
-      if (!gameTitle || !content || typeof score !== 'number') {
+      if (!gameTitle || !content || score == null || typeof score !== 'number'  || Number.isNaN(score)) {
         res.status(400).json({ message: 'Faltan campos obligatorios o son inválidos' });
         return;
       }
 
-      // Crear instancia de la entidad Review
       const review = new Review(gameTitle, content, score, author);
-      // Guardar en la base de datos usando el repositorio
+      
       const createdReview = await repository.create(review);
 
       if (createdReview) {

@@ -1,17 +1,18 @@
 services:
-  mongodb:
-    image: mongo:6.0
-    container_name: mongodb
+  postgres:
+    image: postgres:16
+    container_name: postgres
     ports:
-      - "27017:27017"
+      - "5432:5432"
     volumes:
-      - mongodb_data:/data/db
+      - postgres_data:/var/lib/postgresql/data
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=rateup
-      - MONGO_INITDB_ROOT_PASSWORD=example
-      - MONGO_INITDB_DATABASE=db
+      - POSTGRES_USER=rateup
+      - POSTGRES_PASSWORD=rateup123
+      - POSTGRES_DB=rateupdb
+    # restart: always
 
 volumes:
-  mongodb_data:
+  postgres_data:
     driver: local
   
