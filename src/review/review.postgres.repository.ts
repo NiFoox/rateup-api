@@ -20,4 +20,11 @@ export class ReviewPostgresRepository implements ReviewRepository {
     );
     return rows[0];
     }
+    async update(review: Review): Promise<Review | undefined> {
+      const { rows } = await client.query<Review>(
+          'UPDATE reviews SET gameTitle=$1, content=$2, score=$3, author=$4 WHERE id=$5 RETURNING *',
+          [review.gameTitle, review.content, review.score, review.author, review.id]
+      );
+      return rows[0];
+    }
 }

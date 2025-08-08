@@ -12,7 +12,7 @@ router.post('/', (req, res) => controller.create(req, res));
 // Read
 
 // Update
-
+router.put('/:id', (req, res) => controller.update(req, res));
 // Delete
 
 export default router;
