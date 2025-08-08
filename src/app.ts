@@ -1,10 +1,13 @@
 import express from 'express';
-import { gameRoutes } from './game/game.routes.js'
+
+import reviewRouter from './review/review.routes.js';
+import { gameRoutes } from './game/game.routes.js';
 
 const app = express();
 app.use(express.json());
 const PORT = 3000;
 
+app.use('/reviews', reviewRouter);
 app.use('/games', gameRoutes);
 
 app.listen(PORT, () => {
