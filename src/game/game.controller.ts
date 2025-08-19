@@ -18,7 +18,10 @@ export class GameController {
 
     const game = new Game(name, description, genre);
     const saved = await repo.create(game);
-    res.status(201).json(saved);
+    res
+      .status(201)
+      .location(`/games/${saved.id}`) // Location relativa
+      .json(saved);
   }
 
   async get(req: Request, res: Response) {
