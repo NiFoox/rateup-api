@@ -1,20 +1,35 @@
-import express from 'express';
+import { Router } from "express";
+import { validateBody, validateParams, validateQuery } from "../shared/middlewares/validate.js";
+import { GameCreateSchema, GameUpdateSchema, GameIdParamSchema, GameListQuerySchema } from "./validators/game.validation.js";
 import { GameController } from './game.controller.js';
 
-const router = express.Router();
+const gameRouter = Router();
 const controller = new GameController();
 
 //Create
-router.post('/', (req, res) => controller.create(req, res));
+gameRouter.post("/",  validateBody(GameCreateSchema),  controller.create);
 
 //Read
-router.get('/:id', (req, res) => controller.get(req, res));
-router.get('/', (req, res) => controller.getAll(req, res));
+gameRouter.get("/all", (req, res) => controller.getAll(req, res));
+
+gameRouter.get("/:id", validateParams(GameIdParamSchema), controller.getById);
+
+gameRouter.get("/",   validateQuery(GameListQuerySchema), controller.list);
+
+
 
 //Update
-router.put('/:id', (req, res) => controller.update(req, res));
+gameRouter.patch("/:id",
+  validateParams(GameIdParamSchema),
+  validateBody(GameUpdateSchema),
+  controller.patch
+);
 
 //Delete
-router.delete('/:id', (req, res) => controller.delete(req, res));
+gameRouter.delete(
+  "/:id",
+  validateParams(GameIdParamSchema),
+  controller.delete
+);
 
-export { router as gameRoutes };
+export default gameRouter;
