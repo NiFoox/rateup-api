@@ -1,5 +1,5 @@
 {
-  "name": "rateup",
+  "name": "rateup-api",
   "version": "1.0.0",
   "description": "Proyecto de 'Desarrollo De Software'",
   "main": "index.js",
@@ -7,7 +7,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -p ./tsconfig.json",
-    "start:dev": "tsc-watch --noClear -p ./tsconfig.json --onSuccess \"node ./dist/app.js\""
+    "start:dev": "tsc-watch --noClear -p ./tsconfig.json --onSuccess \"node ./dist/app.js\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "repository": {
     "type": "git",
@@ -21,15 +25,24 @@
   },
   "homepage": "https://github.com/NiFoox/RateUp#readme",
   "devDependencies": {
+    "@eslint/js": "^9.37.0",
+    "@eslint/json": "^0.13.2",
     "@types/express": "^5.0.3",
     "@types/node": "^24.1.0",
     "@types/pg": "^8.15.5",
+    "eslint": "^9.37.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.4.0",
+    "jiti": "^2.6.1",
+    "prettier": "3.6.2",
     "tsc-watch": "^7.1.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.45.0"
   },
   "dependencies": {
-    "@types/pg": "^8.15.5",
     "express": "^5.1.0",
-    "pg": "^8.16.3"
+    "helmet": "^8.1.0",
+    "pg": "^8.16.3",
+    "zod": "^4.0.17"
   }
 }
