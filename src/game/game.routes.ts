@@ -2,34 +2,36 @@ import { Router } from "express";
 import { validateBody, validateParams, validateQuery } from "../shared/middlewares/validate.js";
 import { GameCreateSchema, GameUpdateSchema, GameIdParamSchema, GameListQuerySchema } from "./validators/game.validation.js";
 import { GameController } from './game.controller.js';
+import type { GameRepository } from "./game.repository.interface.js";
 
-const gameRouter = Router();
-const controller = new GameController();
+export default function buildGameRouter(repo : GameRepository) {
 
-//Create
-gameRouter.post("/",  validateBody(GameCreateSchema),  controller.create);
+  const gameRouter = Router();
+  const controller = new GameController(repo);
 
-//Read
-gameRouter.get("/all", (req, res) => controller.getAll(req, res));
+  //Create
+  gameRouter.post("/", validateBody(GameCreateSchema), controller.create.bind(controller));
 
-gameRouter.get("/:id", validateParams(GameIdParamSchema), controller.getById);
+  //Read
+  // !!! el profe dijo q se usa mas algo como routes, se referira a hacer algo como composition routes? o flashie composition root
 
-gameRouter.get("/",   validateQuery(GameListQuerySchema), controller.list);
+  gameRouter.get("/:id", validateParams(GameIdParamSchema), controller.getById.bind(controller));
 
+  gameRouter.get("/",   validateQuery(GameListQuerySchema), controller.list.bind(controller));
 
+  //Update
+  gameRouter.patch("/:id",
+    validateParams(GameIdParamSchema),
+    validateBody(GameUpdateSchema),
+    controller.patch.bind(controller)
+  );
 
-//Update
-gameRouter.patch("/:id",
-  validateParams(GameIdParamSchema),
-  validateBody(GameUpdateSchema),
-  controller.patch
-);
+  //Delete
+  gameRouter.delete(
+    "/:id",
+    validateParams(GameIdParamSchema),
+    controller.delete.bind(controller)
+  );
 
-//Delete
-gameRouter.delete(
-  "/:id",
-  validateParams(GameIdParamSchema),
-  controller.delete
-);
-
-export default gameRouter;
+  return gameRouter
+}

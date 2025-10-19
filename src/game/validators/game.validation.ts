@@ -30,6 +30,7 @@ export const GameListQuerySchema = z.object({
   ),
   search: z.preprocess(emptyToUndef, z.string().trim().optional()),
   genre: z.preprocess(emptyToUndef, z.string().trim().optional()),
+  all: z.preprocess(emptyToUndef, z.coerce.boolean().optional().default(false)),
 });
 
 //

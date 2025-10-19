@@ -2,7 +2,7 @@
 GET http://localhost:3000/games?page=1&limit=10
 
 ### obtener todos los games (sin paginar)
-GET http://localhost:3000/games/all
+GET http://localhost:3000/games/?all=true
 
 ### obtener un game
 GET http://localhost:3000/games/4
