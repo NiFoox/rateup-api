@@ -1,18 +1,18 @@
 import express from 'express';
 import helmet from 'helmet';
 import reviewRouter from './review/review.routes.js';
-import gameRouter from './game/game.routes.js';
+import buildGameRouter from './game/game.routes.js';
+import { container } from './shared/container.js';
 
-const PORT = 3000;
 const app = express();
-
 app.use(express.json({ limit: '100kb' })); // Limitar tamaño de cuerpo
-
 app.use(helmet()); // Seguridad básica
 
 app.use('/reviews', reviewRouter);
-app.use('/games', gameRouter);
+app.use('/games', buildGameRouter(container.gameRepository));
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+export default app;
+
+// Usar los types en todos los parámetros de los métodos?
+// Probar llamar una api externa, con axios, got, etc. Microservicio a microservicio
+// Meterle logger como pino o winston?
