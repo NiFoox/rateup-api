@@ -15,4 +15,9 @@ export default app;
 
 // Usar los types en todos los parámetros de los métodos?
 // Probar llamar una api externa, con axios, got, etc. Microservicio a microservicio
-// Meterle logger como pino o winston?
+// Falta hacer service?
+// Falta jest
+// Falta .env y config.
+// Falta mejorar dockercompose, para levantar api también
+// Falta manejo de errores?
+// Falta exponer endpoints de healthcheck, métricas, etc.

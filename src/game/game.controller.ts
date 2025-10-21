@@ -11,7 +11,7 @@ export class GameController {
 
   // Create
   async create(req: Request, res: Response) {
-    const { name, description, genre } = req.body;
+    const { name, description, genre } = req.body as GameCreateDTO;
     if (await this.repo.findByName(name)) {
       return res.status(400).json({ error: "El nombre ya existe" });
     }
