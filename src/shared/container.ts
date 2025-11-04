@@ -2,8 +2,8 @@
 import { createPgPool } from './db.js';
 import { GamePostgresRepository } from '../game/game.postgres.repository.js';
 
-const pool = createPgPool(); // se crea una sola vez
+const pool = createPgPool();
+const newRepository = new GamePostgresRepository(pool);
 export const container = {
-  pool,
-  gameRepository: new GamePostgresRepository(pool),
+  gameRepository: newRepository,
 };

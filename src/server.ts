@@ -1,11 +1,10 @@
 import http from 'http';
 import app from './app.js';
-import { container } from './shared/container.js';
 import { logger } from './shared/logger.js'; // Pino
 
 const PORT = Number(process.env.PORT) || 3000;
 
-// Crear server HTTP
+// Crear server HTTP para configurar los timeouts
 const server = http.createServer(app);
 
 server.keepAliveTimeout = 60_000;  // conexiones keep-alive hasta 60s
@@ -21,31 +20,9 @@ server.listen(PORT, () => {
 // Manejo de errores no capturados
 process.on('unhandledRejection', (reason) => {
   logger.error({ reason }, 'UNHANDLED REJECTION');
+  process.exit(1);
 });
 process.on('uncaughtException', (err) => {
   logger.fatal({ err }, 'UNCAUGHT EXCEPTION');
+  process.exit(1);
 });
-
-// !!! Fixear para q aparezca en consola al cerrar con ctrl+c, el watcher lo mata antes
-
-// Apagado ordenado
-const shutdown = async (signal: string) => {
-  logger.warn({ signal }, 'Shutdown signal received');
-  server.close(async (closeErr) => {
-    if (closeErr) {
-      logger.error({ closeErr }, 'Error closing HTTP server');
-    }
-    try {
-      // Cerrar la pool de Postgres
-      await container.pool.end();
-      logger.info('Postgres pool closed');
-    } catch (e) {
-      logger.error({ e }, 'Error closing Postgres pool');
-    } finally {
-      process.exit(0);
-    }
-  });
-};
-
-process.on('SIGINT',  () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));
