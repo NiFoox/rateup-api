@@ -4,6 +4,6 @@ export class Review {
     public content: string,
     public score: number,
     public author: string,
-    public id?: number
+    public id?: number,
   ) {}
 }

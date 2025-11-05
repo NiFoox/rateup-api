@@ -11,7 +11,7 @@ export class GamePostgresRepository implements GameRepository {
   async create(game: Game): Promise<Game> {
     const { rows } = await this.db.query<Game>(
       'INSERT INTO games (name, description, genre) VALUES ($1,$2,$3) RETURNING *',
-      [game.name, game.description, game.genre]
+      [game.name, game.description, game.genre],
     );
     return rows[0];
   }
@@ -30,7 +30,7 @@ export class GamePostgresRepository implements GameRepository {
   async getPaginated(
     offset: number,
     limit: number,
-    opts?: { search?: string; genre?: string }
+    opts?: { search?: string; genre?: string },
   ): Promise<Game[]> {
     const where: string[] = [];
     const params: any[] = [];
@@ -47,7 +47,7 @@ export class GamePostgresRepository implements GameRepository {
       i++;
     }
 
-    const whereSQL = where.length ? `WHERE ${where.join(" AND ")}` : "";
+    const whereSQL = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
     const sql = `
       SELECT id, name, description, genre

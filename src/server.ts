@@ -7,9 +7,9 @@ const PORT = Number(process.env.PORT) || 3000;
 // Crear server HTTP para configurar los timeouts
 const server = http.createServer(app);
 
-server.keepAliveTimeout = 60_000;  // conexiones keep-alive hasta 60s
-server.headersTimeout   = 65_000;  // mayor que keepAliveTimeout
-server.requestTimeout   = 60_000;  // timeout de request
+server.keepAliveTimeout = 60_000; // conexiones keep-alive hasta 60s
+server.headersTimeout = 65_000; // mayor que keepAliveTimeout
+server.requestTimeout = 60_000; // timeout de request
 
 // Arrancar
 server.listen(PORT, () => {

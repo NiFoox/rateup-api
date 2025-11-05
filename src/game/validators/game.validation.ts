@@ -1,5 +1,5 @@
 // src/game/validators/game.validation.ts
-import { z } from "zod";
+import { z } from 'zod';
 
 // POST /games (obligatorio + strict)
 export const GameCreateSchema = z.strictObject({
@@ -17,16 +17,13 @@ export const GameIdParamSchema = z.object({
 
 // helper: "" -> undefined para que funcionen los default()
 const emptyToUndef = (rawValue: unknown) =>
-  typeof rawValue === "string" && rawValue.trim() === "" ? undefined : rawValue;
+  typeof rawValue === 'string' && rawValue.trim() === '' ? undefined : rawValue;
 
 export const GameListQuerySchema = z.object({
-  page: z.preprocess(
-    (input) => emptyToUndef(input),
-    z.coerce.number().int().min(1).default(1)
-  ),
+  page: z.preprocess((input) => emptyToUndef(input), z.coerce.number().int().min(1).default(1)),
   limit: z.preprocess(
     (input) => emptyToUndef(input),
-    z.coerce.number().int().min(1).max(100).default(20)
+    z.coerce.number().int().min(1).max(100).default(20),
   ),
   search: z.preprocess(emptyToUndef, z.string().trim().optional()),
   genre: z.preprocess(emptyToUndef, z.string().trim().optional()),
@@ -37,4 +34,4 @@ export const GameListQuerySchema = z.object({
 export type GameCreateDTO = z.output<typeof GameCreateSchema>;
 export type GameUpdateDTO = z.output<typeof GameUpdateSchema>;
 export type GameListQuery = z.output<typeof GameListQuerySchema>;
-export type GameIdParams  = z.output<typeof GameIdParamSchema>;
+export type GameIdParams = z.output<typeof GameIdParamSchema>;

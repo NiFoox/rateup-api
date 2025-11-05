@@ -22,7 +22,11 @@ function makeRes() {
   const location = jest.fn().mockReturnThis();
   const send = jest.fn().mockReturnThis();
   const res = { status, json, location, send, locals: {} } as unknown as Response & {
-    status: jest.Mock, json: jest.Mock, location: jest.Mock, send: jest.Mock, locals: any
+    status: jest.Mock;
+    json: jest.Mock;
+    location: jest.Mock;
+    send: jest.Mock;
+    locals: any;
   };
   return { res, status, json, location, send };
 }
@@ -42,7 +46,9 @@ describe('GameController', () => {
     it('retorna 400 si el nombre ya existe', async () => {
       repo.findByName.mockResolvedValue({ id: 1, name: 'Zelda', description: '...', genre: 'RPG' });
 
-      const req = { body: { name: 'Zelda', description: 'Nueva', genre: 'RPG' } } as unknown as Request;
+      const req = {
+        body: { name: 'Zelda', description: 'Nueva', genre: 'RPG' },
+      } as unknown as Request;
       const { res, status, json } = makeRes();
 
       await controller.create(req, res);
@@ -55,9 +61,16 @@ describe('GameController', () => {
 
     it('crea y retorna 201 con Location cuando el nombre no existe', async () => {
       repo.findByName.mockResolvedValue(null);
-      repo.create.mockResolvedValue({ id: 10, name: 'Celeste', description: 'Plataformas', genre: 'Indie' });
+      repo.create.mockResolvedValue({
+        id: 10,
+        name: 'Celeste',
+        description: 'Plataformas',
+        genre: 'Indie',
+      });
 
-      const req = { body: { name: 'Celeste', description: 'Plataformas', genre: 'Indie' } } as unknown as Request;
+      const req = {
+        body: { name: 'Celeste', description: 'Plataformas', genre: 'Indie' },
+      } as unknown as Request;
       const { res, status, json, location } = makeRes();
 
       await controller.create(req, res);
@@ -66,14 +79,24 @@ describe('GameController', () => {
       expect(repo.create).toHaveBeenCalledWith(new Game('Celeste', 'Plataformas', 'Indie'));
       expect(status).toHaveBeenCalledWith(201);
       expect(location).toHaveBeenCalledWith('/games/10');
-      expect(json).toHaveBeenCalledWith({ id: 10, name: 'Celeste', description: 'Plataformas', genre: 'Indie' });
+      expect(json).toHaveBeenCalledWith({
+        id: 10,
+        name: 'Celeste',
+        description: 'Plataformas',
+        genre: 'Indie',
+      });
     });
   });
 
   // READ: getById
   describe('getById', () => {
     it('retorna el juego si existe', async () => {
-      repo.findById.mockResolvedValue({ id: 2, name: 'Hades', description: 'ARPG', genre: 'Rogue' });
+      repo.findById.mockResolvedValue({
+        id: 2,
+        name: 'Hades',
+        description: 'ARPG',
+        genre: 'Rogue',
+      });
 
       const req = {} as Request;
       const { res, json } = makeRes();
@@ -82,7 +105,12 @@ describe('GameController', () => {
       await controller.getById(req, res);
 
       expect(repo.findById).toHaveBeenCalledWith(2);
-      expect(json).toHaveBeenCalledWith({ id: 2, name: 'Hades', description: 'ARPG', genre: 'Rogue' });
+      expect(json).toHaveBeenCalledWith({
+        id: 2,
+        name: 'Hades',
+        description: 'ARPG',
+        genre: 'Rogue',
+      });
     });
 
     it('retorna 404 si no existe', async () => {
@@ -112,7 +140,9 @@ describe('GameController', () => {
       await controller.list(req, res);
 
       expect(repo.getAll).toHaveBeenCalled();
-      expect(json).toHaveBeenCalledWith([{ id: 1, name: 'Zelda', description: '...', genre: 'RPG' }]);
+      expect(json).toHaveBeenCalledWith([
+        { id: 1, name: 'Zelda', description: '...', genre: 'RPG' },
+      ]);
     });
 
     it('retorna paginado si all=false', async () => {
@@ -122,7 +152,9 @@ describe('GameController', () => {
 
       const req = {} as Request;
       const { res, json } = makeRes();
-      res.locals = { validated: { query: { all: false, page: 2, limit: 1, search: 'g', genre: 'Indie' } } };
+      res.locals = {
+        validated: { query: { all: false, page: 2, limit: 1, search: 'g', genre: 'Indie' } },
+      };
 
       await controller.list(req, res);
 
@@ -139,22 +171,36 @@ describe('GameController', () => {
   // UPDATE: patch
   describe('patch', () => {
     it('retorna el juego parchado si existe', async () => {
-      repo.patch.mockResolvedValue({ id: 5, name: 'Ori', description: 'Bellísimo', genre: 'Metroidvania' });
+      repo.patch.mockResolvedValue({
+        id: 5,
+        name: 'Ori',
+        description: 'Bellísimo',
+        genre: 'Metroidvania',
+      });
 
-      const req = { body: { name: 'Ori', description: 'Bellísimo', genre: 'Metroidvania' } } as unknown as Request;
+      const req = {
+        body: { name: 'Ori', description: 'Bellísimo', genre: 'Metroidvania' },
+      } as unknown as Request;
       const { res, json } = makeRes();
       res.locals = { validated: { params: { id: 5 } } };
 
       await controller.patch(req, res);
 
       expect(repo.patch).toHaveBeenCalledWith(5, new Game('Ori', 'Bellísimo', 'Metroidvania'));
-      expect(json).toHaveBeenCalledWith({ id: 5, name: 'Ori', description: 'Bellísimo', genre: 'Metroidvania' });
+      expect(json).toHaveBeenCalledWith({
+        id: 5,
+        name: 'Ori',
+        description: 'Bellísimo',
+        genre: 'Metroidvania',
+      });
     });
 
     it('retorna 404 si no existe', async () => {
       repo.patch.mockResolvedValue(undefined);
 
-      const req = { body: { name: 'NoExiste', description: 'x', genre: 'x' } } as unknown as Request;
+      const req = {
+        body: { name: 'NoExiste', description: 'x', genre: 'x' },
+      } as unknown as Request;
       const { res, status, json } = makeRes();
       res.locals = { validated: { params: { id: 123 } } };
 
