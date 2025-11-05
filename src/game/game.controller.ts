@@ -15,7 +15,7 @@ export class GameController {
     if (await this.repo.findByName(name)) {
       return res.status(400).json({ error: "El nombre ya existe" });
     }
-    let game = new Game(name, description, genre);
+    const game = new Game(name, description, genre);
     const saved = await this.repo.create(game);
     return res.status(201).location(`/games/${saved.id}`).json(saved);
   }
@@ -51,7 +51,7 @@ export class GameController {
   async patch(req: Request, res: Response) {
     const { id } = res.locals.validated.params as GameIdParams;
     const { name, description, genre } = req.body;
-    let game = new Game(name, description, genre);
+    const game = new Game(name, description, genre);
     const patched = await this.repo.patch(id, game);
     return patched ? res.json(patched) : res.status(404).json({ error: "Juego no encontrado" });
   }
