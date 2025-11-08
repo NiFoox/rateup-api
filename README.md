@@ -5,8 +5,12 @@ Proyecto de 'Desarrollo De Software'
 ## Endpoints principales
 
 ### Juegos
-- `GET /games`
-- `POST /games`
+- `GET /games/?all=true` - obtiene todos los juegos
+- `GET /games?page=1&limit=10` - obtiene los juegos paginado
+- `GET /games/{id}` – obtiene un juego por identificador.
+- `POST /games` – crea juegos (requiere `name`, `description`, `genre`).
+- `PATCH /games/{id}` – actualiza datos de un juego (`name`, `description`, `genre`).
+- `DELETE /games/{id}` – elimina un juego.
 
 ### Reseñas
 - `POST /reviews`
