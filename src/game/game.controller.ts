@@ -1,51 +1,66 @@
 import { Request, Response } from 'express';
-import { GamePostgresRepository } from './game.postgres.repository.js';
+import { GameRepository } from './game.repository.interface.js';
 import { Game } from './game.entity.js';
-
-const repo = new GamePostgresRepository();
+import {
+  GameCreateDTO,
+  GameIdParams,
+  GameListQuery,
+  GameListQuerySchema,
+} from './validators/game.validation.js';
 
 export class GameController {
+  constructor(private readonly repo: GameRepository) {
+    this.repo = repo;
+  }
+
+  // Create
   async create(req: Request, res: Response) {
-    const { name, description, genre } = req.body;
-
-    if (!name || !description || !genre) {
-      return res.status(400).json({ error: 'Faltan campos obligatorios' });
-    }
-
-    if (await repo.findByName(name)) {
+    const { name, description, genre } = req.body as GameCreateDTO;
+    if (await this.repo.findByName(name)) {
       return res.status(400).json({ error: 'El nombre ya existe' });
     }
-
     const game = new Game(name, description, genre);
-    const saved = await repo.create(game);
-    res.status(201).json(saved);
+    const saved = await this.repo.create(game);
+    return res.status(201).location(`/games/${saved.id}`).json(saved);
   }
 
-  async get(req: Request, res: Response) {
-    const id = Number(req.params.id);
-    const game = await repo.findById(id);
-    return game
-      ? res.json(game)
-      : res.status(404).json({ error: 'Juego no encontrado' });
+  // Read
+  async getById(req: Request, res: Response) {
+    const { id } = res.locals.validated.params as GameIdParams;
+    const game = await this.repo.findById(id);
+    return game ? res.json(game) : res.status(404).json({ error: 'Juego no encontrado' });
   }
 
-  async getAll(req: Request, res: Response) {
-    const games = await repo.getAll();
-    res.json(games);
+  async list(req: Request, res: Response) {
+    const q: GameListQuery =
+      (res.locals?.validated?.query as GameListQuery) ?? GameListQuerySchema.parse(req.query);
+
+    const { page, limit, search, genre, all } = q;
+
+    if (all) {
+      const games = await this.repo.getAll();
+      return res.json(games);
+    } else {
+      const offset = (page - 1) * limit;
+
+      const games = await this.repo.getPaginated(offset, limit, { search, genre });
+      return res.json({ page, limit, data: games });
+    }
   }
 
-  async update(req: Request, res: Response) {
-    const id = Number(req.params.id);
-    const data = req.body;
-    const updated = await repo.update(id, data);
-    return updated
-      ? res.json(updated)
-      : res.status(404).json({ error: 'Juego no encontrado' });
+  // Update
+  async patch(req: Request, res: Response) {
+    const { id } = res.locals.validated.params as GameIdParams;
+    const { name, description, genre } = req.body;
+    const game = new Game(name, description, genre);
+    const patched = await this.repo.patch(id, game);
+    return patched ? res.json(patched) : res.status(404).json({ error: 'Juego no encontrado' });
   }
 
+  // Delete
   async delete(req: Request, res: Response) {
-    const id = Number(req.params.id);
-    const deleted = await repo.delete(id);
+    const { id } = res.locals.validated.params as GameIdParams;
+    const deleted = await this.repo.delete(id);
     return deleted
       ? res.status(204).send()
       : res.status(404).json({ error: 'Juego no encontrado' });

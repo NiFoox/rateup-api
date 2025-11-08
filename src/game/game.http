@@ -1,0 +1,30 @@
+### obtener todos los games (paginado)
+GET http://localhost:3000/games?page=1&limit=10
+
+### obtener todos los games (sin paginar)
+GET http://localhost:3000/games/?all=true
+
+### obtener un game
+GET http://localhost:3000/games/4
+
+### crear un nuevo game
+POST http://localhost:3000/games
+Content-Type: application/json
+
+{
+  "name": "GTA 5",
+  "description": "Juego de mundo abierto",
+  "genre": "action"
+}
+
+### modificar un game (PATCH - recurso parcial)
+PATCH http://localhost:3000/games/4
+Content-Type: application/json
+
+{
+  "description": "Descripción actualizada sin tocar el nombre",
+  "genre": "adventure"
+}
+
+### borrar un game
+DELETE http://localhost:3000/games/1

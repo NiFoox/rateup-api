@@ -1,6 +1,6 @@
 import { Client } from 'pg';
-import { Review } from "./review.entity.js";
-import { ReviewRepository } from "./review.repository.interface.js";
+import { Review } from './review.entity.js';
+import { ReviewRepository } from './review.repository.interface.js';
 
 const client = new Client({
   host: process.env.POSTGRES_HOST || 'localhost',
@@ -12,19 +12,19 @@ const client = new Client({
 
 client.connect();
 
-export class ReviewPostgresRepository implements ReviewRepository {  
-    async create(review: Review): Promise<Review> {
+export class ReviewPostgresRepository implements ReviewRepository {
+  async create(review: Review): Promise<Review> {
     const { rows } = await client.query<Review>(
-        'INSERT INTO reviews (gameTitle, content, score, author) VALUES ($1,$2,$3,$4) RETURNING *',
-        [review.gameTitle, review.content, review.score, review.author]
+      'INSERT INTO reviews (gameTitle, content, score, author) VALUES ($1,$2,$3,$4) RETURNING *',
+      [review.gameTitle, review.content, review.score, review.author],
     );
     return rows[0];
-    }
-    async update(review: Review): Promise<Review | undefined> {
-      const { rows } = await client.query<Review>(
-          'UPDATE reviews SET gameTitle=$1, content=$2, score=$3, author=$4 WHERE id=$5 RETURNING *',
-          [review.gameTitle, review.content, review.score, review.author, review.id]
-      );
-      return rows[0];
-    }
+  }
+  async update(review: Review): Promise<Review | undefined> {
+    const { rows } = await client.query<Review>(
+      'UPDATE reviews SET gameTitle=$1, content=$2, score=$3, author=$4 WHERE id=$5 RETURNING *',
+      [review.gameTitle, review.content, review.score, review.author, review.id],
+    );
+    return rows[0];
+  }
 }
