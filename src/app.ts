@@ -3,6 +3,8 @@ import helmet from 'helmet';
 import reviewRouter from './review/review.routes.js';
 import buildGameRouter from './game/game.routes.js';
 import { container } from './shared/container.js';
+import { userRoutes } from './user/user.routes.js';
+import { authRoutes } from './auth/auth.routes.js';
 
 const app = express();
 app.use(express.json({ limit: '100kb' })); // Limitar tamaño de cuerpo
@@ -10,6 +12,8 @@ app.use(helmet()); // Seguridad básica
 
 app.use('/reviews', reviewRouter);
 app.use('/games', buildGameRouter(container.gameRepository));
+app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
 
 export default app;
 
