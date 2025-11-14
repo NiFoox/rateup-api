@@ -1,18 +1,49 @@
 import { Router } from 'express';
 import { ReviewController } from './review.controller.js';
+import {
+  CommentBodySchema,
+  CommentIdParamSchema,
+  CommentListQuerySchema,
+  ReviewIdParamSchema,
+  ReviewListQuerySchema,
+  VoteRequestSchema,
+} from './validators/review.validation.js';
+import { validateBody, validateParams, validateQuery } from '../shared/middlewares/validate.js';
 
-export const reviewRouter = Router();
+export function buildReviewRouter(controller: ReviewController) {
+  const router = Router();
 
-const router = Router();
-const controller = new ReviewController();
+  router.get('/', validateQuery(ReviewListQuerySchema), controller.list);
+  router.get('/:reviewId', validateParams(ReviewIdParamSchema), controller.getById);
+  router.post(
+    '/:reviewId/votes',
+    validateParams(ReviewIdParamSchema),
+    validateBody(VoteRequestSchema),
+    controller.vote,
+  );
+  router.get(
+    '/:reviewId/comments',
+    validateParams(ReviewIdParamSchema),
+    validateQuery(CommentListQuerySchema),
+    controller.getComments,
+  );
+  router.post(
+    '/:reviewId/comments',
+    validateParams(ReviewIdParamSchema),
+    validateBody(CommentBodySchema),
+    controller.addComment,
+  );
+  router.patch(
+    '/:reviewId/comments/:commentId',
+    validateParams(CommentIdParamSchema),
+    validateBody(CommentBodySchema),
+    controller.updateComment,
+  );
+  router.delete(
+    '/:reviewId/comments/:commentId',
+    validateParams(CommentIdParamSchema),
+    controller.deleteComment,
+  );
 
-// Create
-router.post('/', (req, res) => controller.create(req, res));
-
-// Read
-
-// Update
-router.put('/:id', (req, res) => controller.update(req, res));
-// Delete
-
-export default router;
+  return router;
+}

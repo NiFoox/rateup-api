@@ -1,5 +1,7 @@
 export interface UpdateUserDto {
-  username?: string;
+  name?: string;
   email?: string;
-  isActive?: boolean;
+  roles?: string[];
+  active?: boolean;
+  password?: string;
 }

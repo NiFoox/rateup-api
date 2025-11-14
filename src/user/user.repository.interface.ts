@@ -1,15 +1,36 @@
-import { User } from './user.entity.js';
+import { UserWithSecrets } from './user.entity.js';
+
+export interface UserListFilters {
+  search?: string;
+  role?: string;
+  active?: boolean;
+  sort?: 'name' | 'email' | 'createdAt' | 'active';
+  dir?: 'asc' | 'desc';
+  offset: number;
+  limit: number;
+}
 
 export interface UserRepository {
-  create(user: User): Promise<User>;
-  findById(id: number): Promise<User | null>;
-  findByUsername(username: string): Promise<User | null>;
-  findByEmail(email: string): Promise<User | null>;
-  search(
-    page: number,
-    pageSize: number,
-    searchTerm?: string
-  ): Promise<{ data: User[]; total: number }>;
-  update(id: number, data: Partial<User>): Promise<User | undefined>;
-  delete(id: number): Promise<boolean>;
+  list(filters: UserListFilters): Promise<{ users: UserWithSecrets[]; total: number }>;
+  findById(id: string): Promise<UserWithSecrets | null>;
+  findByEmail(email: string): Promise<UserWithSecrets | null>;
+  findByName(name: string): Promise<UserWithSecrets | null>;
+  create(data: {
+    name: string;
+    email: string;
+    roles: string[];
+    active: boolean;
+    passwordHash?: string | null;
+  }): Promise<UserWithSecrets>;
+  update(
+    id: string,
+    data: Partial<{
+      name: string;
+      email: string;
+      roles: string[];
+      active: boolean;
+      passwordHash?: string | null;
+    }>,
+  ): Promise<UserWithSecrets | null>;
+  delete(id: string): Promise<boolean>;
 }

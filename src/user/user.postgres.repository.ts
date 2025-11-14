@@ -1,109 +1,167 @@
-import { Client } from 'pg';
-import { User } from './user.entity.js';
-import { UserRepository } from './user.repository.interface.js';
+import { UserWithSecrets } from './user.entity.js';
+import { UserListFilters, UserRepository } from './user.repository.interface.js';
 
-const client = new Client({
-  host: process.env.POSTGRES_HOST || 'localhost',
-  port: Number(process.env.POSTGRES_PORT) || 5432,
-  user: process.env.POSTGRES_USER || 'rateup',
-  password: process.env.POSTGRES_PASSWORD || 'rateup123',
-  database: process.env.POSTGRES_DB || 'rateupdb',
-});
+type Pool = import('pg').Pool;
 
-client.connect();
-
-function mapRowToUser(row: any): User {
-  return new User(
-    row.username,
-    row.email,
-    row.password_hash,
-    row.is_active,
-    row.created_at,
-    row.id
-  );
+function mapRow(row: any): UserWithSecrets {
+  return {
+    id: String(row.id),
+    name: row.name,
+    email: row.email,
+    roles: (row.roles ?? []) as string[],
+    active: row.active ?? row.is_active,
+    createdAt: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
+    updatedAt: row.updated_at ?? null,
+    passwordHash: row.password_hash ?? null,
+  };
 }
 
+const SORT_COLUMNS: Record<NonNullable<UserListFilters['sort']>, string> = {
+  name: 'name',
+  email: 'email',
+  createdAt: 'created_at',
+  active: 'active',
+};
+
 export class UserPostgresRepository implements UserRepository {
-  async create(user: User): Promise<User> {
-    const { rows } = await client.query(
-      'INSERT INTO users (username, email, password_hash, is_active) VALUES ($1,$2,$3,$4) RETURNING *',
-      [user.username, user.email, user.passwordHash, user.isActive]
-    );
-    return mapRowToUser(rows[0]);
-  }
+  constructor(private readonly pool: Pool) {}
 
-  async findById(id: number): Promise<User | null> {
-    const { rows } = await client.query('SELECT * FROM users WHERE id = $1', [id]);
-    return rows[0] ? mapRowToUser(rows[0]) : null;
-  }
+  async list(filters: UserListFilters): Promise<{ users: UserWithSecrets[]; total: number }> {
+    const conditions: string[] = [];
+    const values: any[] = [];
 
-  async findByUsername(username: string): Promise<User | null> {
-    const { rows } = await client.query('SELECT * FROM users WHERE username = $1', [username]);
-    return rows[0] ? mapRowToUser(rows[0]) : null;
-  }
-
-  async findByEmail(email: string): Promise<User | null> {
-    const { rows } = await client.query('SELECT * FROM users WHERE email = $1', [email]);
-    return rows[0] ? mapRowToUser(rows[0]) : null;
-  }
-
-  async search(page: number, pageSize: number, searchTerm?: string): Promise<{ data: User[]; total: number }> {
-    const offset = (page - 1) * pageSize;
-    const params: any[] = [];
-    let whereClause = '';
-
-    if (searchTerm) {
-      params.push(`%${searchTerm.toLowerCase()}%`);
-      whereClause = 'WHERE LOWER(username) LIKE $1 OR LOWER(email) LIKE $1';
+    if (filters.search) {
+      values.push(`%${filters.search.toLowerCase()}%`);
+      conditions.push('(LOWER(name) LIKE $' + values.length + ' OR LOWER(email) LIKE $' + values.length + ')');
     }
 
-    const totalQuery = `SELECT COUNT(*)::int AS count FROM users ${whereClause}`;
-    const totalResult = await client.query(totalQuery, params);
-    const total = Number(totalResult.rows[0]?.count ?? 0);
+    if (filters.role) {
+      values.push(filters.role);
+      conditions.push('$' + values.length + ' = ANY(roles)');
+    }
 
-    const dataParams = [...params];
-    dataParams.push(pageSize, offset);
+    if (typeof filters.active === 'boolean') {
+      values.push(filters.active);
+      conditions.push('active = $' + values.length);
+    }
 
-    const dataQuery = `SELECT * FROM users ${whereClause} ORDER BY id LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}`;
-    const { rows } = await client.query(dataQuery, dataParams);
-    return { data: rows.map(mapRowToUser), total };
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const totalQuery = `SELECT COUNT(*)::int AS total FROM users ${whereClause}`;
+    const totalResult = await this.pool.query<{ total: number }>(totalQuery, values);
+    const total = totalResult.rows[0]?.total ?? 0;
+
+    const orderColumn = filters.sort ? SORT_COLUMNS[filters.sort] ?? 'created_at' : 'created_at';
+    const direction = filters.dir === 'desc' ? 'DESC' : 'ASC';
+
+    const limitIndex = values.length + 1;
+    const offsetIndex = values.length + 2;
+    const dataValues = [...values, filters.limit, filters.offset];
+
+    const dataQuery = `
+      SELECT id, name, email, roles, active, password_hash, created_at, updated_at
+      FROM users
+      ${whereClause}
+      ORDER BY ${orderColumn} ${direction}
+      LIMIT $${limitIndex}
+      OFFSET $${offsetIndex}
+    `;
+
+    const { rows } = await this.pool.query(dataQuery, dataValues);
+    return { users: rows.map(mapRow), total };
   }
 
-  async update(id: number, data: Partial<User>): Promise<User | undefined> {
+  async findById(id: string): Promise<UserWithSecrets | null> {
+    const { rows } = await this.pool.query('SELECT * FROM users WHERE id = $1', [id]);
+    return rows[0] ? mapRow(rows[0]) : null;
+  }
+
+  async findByEmail(email: string): Promise<UserWithSecrets | null> {
+    const { rows } = await this.pool.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+    return rows[0] ? mapRow(rows[0]) : null;
+  }
+
+  async findByName(name: string): Promise<UserWithSecrets | null> {
+    const { rows } = await this.pool.query('SELECT * FROM users WHERE LOWER(name) = LOWER($1)', [name]);
+    return rows[0] ? mapRow(rows[0]) : null;
+  }
+
+  async create(data: {
+    name: string;
+    email: string;
+    roles: string[];
+    active: boolean;
+    passwordHash?: string | null;
+  }): Promise<UserWithSecrets> {
+    const { rows } = await this.pool.query(
+      `
+      INSERT INTO users (name, email, roles, active, password_hash)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, name, email, roles, active, password_hash, created_at, updated_at
+    `,
+      [data.name, data.email, data.roles, data.active, data.passwordHash ?? null],
+    );
+
+    if (!rows[0]) {
+      throw new Error('USER_CREATE_FAILED');
+    }
+
+    // TODO: ensure users table includes name, roles (TEXT[]), active, password_hash columns.
+    return mapRow(rows[0]);
+  }
+
+  async update(
+    id: string,
+    data: Partial<{
+      name: string;
+      email: string;
+      roles: string[];
+      active: boolean;
+      passwordHash?: string | null;
+    }>,
+  ): Promise<UserWithSecrets | null> {
     const fields: string[] = [];
     const values: any[] = [];
-    let index = 1;
 
-    if (data.username !== undefined) {
-      fields.push(`username = $${index++}`);
-      values.push(data.username);
+    if (data.name !== undefined) {
+      values.push(data.name);
+      fields.push(`name = $${values.length}`);
     }
     if (data.email !== undefined) {
-      fields.push(`email = $${index++}`);
       values.push(data.email);
+      fields.push(`email = $${values.length}`);
     }
-    if (data.isActive !== undefined) {
-      fields.push(`is_active = $${index++}`);
-      values.push(data.isActive);
+    if (data.roles !== undefined) {
+      values.push(data.roles);
+      fields.push(`roles = $${values.length}`);
+    }
+    if (data.active !== undefined) {
+      values.push(data.active);
+      fields.push(`active = $${values.length}`);
     }
     if (data.passwordHash !== undefined) {
-      fields.push(`password_hash = $${index++}`);
       values.push(data.passwordHash);
+      fields.push(`password_hash = $${values.length}`);
     }
 
     if (!fields.length) {
-      const existing = await this.findById(id);
-      return existing ?? undefined;
+      return this.findById(id);
     }
 
     values.push(id);
-    const query = `UPDATE users SET ${fields.join(', ')} WHERE id = $${index} RETURNING *`;
-    const { rows } = await client.query(query, values);
-    return rows[0] ? mapRowToUser(rows[0]) : undefined;
+    const query = `
+      UPDATE users
+      SET ${fields.join(', ')}, updated_at = NOW()
+      WHERE id = $${values.length}
+      RETURNING id, name, email, roles, active, password_hash, created_at, updated_at
+    `;
+
+    const { rows } = await this.pool.query(query, values);
+    return rows[0] ? mapRow(rows[0]) : null;
   }
 
-  async delete(id: number): Promise<boolean> {
-    const { rowCount } = await client.query('DELETE FROM users WHERE id = $1', [id]);
-    return (rowCount ?? 0) > 0;
+  async delete(id: string): Promise<boolean> {
+    const result = await this.pool.query('DELETE FROM users WHERE id = $1', [id]);
+    return (result.rowCount ?? 0) > 0;
   }
 }

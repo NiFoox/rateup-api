@@ -1,14 +1,13 @@
+import { PagedResult } from '../../shared/types/pagination.js';
+
 export interface UserDto {
-  id: number;
-  username: string;
+  id: string;
+  name: string;
   email: string;
-  isActive: boolean;
+  roles: string[];
+  active: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
-export interface PaginatedUsersDto {
-  data: UserDto[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type PagedUsersDto = PagedResult<UserDto>;

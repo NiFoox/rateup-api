@@ -1,4 +1,6 @@
-import { Pool } from 'pg';
+import pg from 'pg';
+
+const { Pool } = pg as unknown as { Pool: new (...args: any[]) => import('pg').Pool };
 
 export function createPgPool() {
   return new Pool({

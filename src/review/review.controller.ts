@@ -1,69 +1,113 @@
 import { Request, Response } from 'express';
-import { ReviewPostgresRepository } from './review.postgres.repository.js';
-import { Review } from './review.entity.js';
-const repository = new ReviewPostgresRepository();
+import { AuthService } from '../auth/auth.service.js';
+import { extractBearerToken } from '../auth/token.utils.js';
+import { ReviewService } from './review.service.js';
+import {
+  CommentBodyDto,
+  CommentListQuery,
+  CommentIdParams,
+  ReviewIdParams,
+  ReviewListQuery,
+  VoteRequestDto,
+} from './validators/review.validation.js';
 
 export class ReviewController {
-  async create(req: Request, res: Response): Promise<void> {
-    try {
-      const { gameTitle, content, score, author } = req.body;
+  constructor(private readonly service: ReviewService, private readonly authService: AuthService) {}
 
-      if (
-        !gameTitle ||
-        !content ||
-        score == null ||
-        typeof score !== 'number' ||
-        Number.isNaN(score)
-      ) {
-        res.status(400).json({ message: 'Faltan campos obligatorios o son inválidos' });
-        return;
-      }
-
-      const review = new Review(gameTitle, content, score, author);
-
-      const createdReview = await repository.create(review);
-
-      if (createdReview) {
-        res.status(201).json(createdReview);
-      } else {
-        res.status(400).json({ message: 'Error al crear la reseña' });
-      }
-    } catch (error) {
-      res.status(500).json({ message: 'Error interno del servidor', error });
-    }
+  private async resolveAuthUser(req: Request) {
+    const token = extractBearerToken(req);
+    return this.authService.getUserFromToken(token);
   }
-  async update(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const { gameTitle, content, score, author } = req.body;
 
-      if (!id || isNaN(Number(id))) {
-        res.status(400).json({ message: 'ID inválido' });
-        return;
-      }
+  list = async (req: Request, res: Response) => {
+    const query = res.locals.validated?.query as ReviewListQuery;
+    const authUser = await this.resolveAuthUser(req);
+    const offset = (query.page - 1) * query.limit;
+    const result = await this.service.list({
+      offset,
+      limit: query.limit,
+      search: query.search,
+      tag: query.tag,
+      game: query.game,
+      sort: query.sort,
+      userId: authUser?.id,
+    });
+    return res.status(200).json(result);
+  };
 
-      if (
-        !gameTitle ||
-        !content ||
-        score == null ||
-        typeof score !== 'number' ||
-        Number.isNaN(score)
-      ) {
-        res.status(400).json({ message: 'Faltan campos obligatorios o son inválidos' });
-        return;
-      }
-
-      const review = new Review(gameTitle, content, score, author, Number(id));
-
-      const updatedReview = await repository.update(review);
-
-      if (updatedReview) {
-        res.status(200).json(updatedReview);
-      } else {
-        res.status(404).json({ message: 'Reseña no encontrada' });
-      }
-    } catch (error) {
-      res.status(500).json({ message: 'Error interno del servidor', error });
+  getById = async (req: Request, res: Response) => {
+    const { reviewId } = res.locals.validated.params as ReviewIdParams;
+    const authUser = await this.resolveAuthUser(req);
+    const review = await this.service.getById(reviewId, authUser?.id);
+    if (!review) {
+      return res.status(404).json({ error: 'Reseña no encontrada' });
     }
-  }
+    return res.status(200).json(review);
+  };
+
+  vote = async (req: Request, res: Response) => {
+    const authUser = await this.resolveAuthUser(req);
+    if (!authUser) {
+      return res.status(401).json({ error: 'Sesión no válida' });
+    }
+    const { reviewId } = res.locals.validated.params as ReviewIdParams;
+    const { value } = req.body as VoteRequestDto;
+
+    try {
+      const result = await this.service.vote(reviewId, authUser.id, value);
+      return res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'REVIEW_NOT_FOUND') {
+        return res.status(404).json({ error: 'Reseña no encontrada' });
+      }
+      return res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  getComments = async (req: Request, res: Response) => {
+    const { reviewId } = res.locals.validated.params as ReviewIdParams;
+    const query = res.locals.validated?.query as CommentListQuery;
+    const offset = (query.page - 1) * query.limit;
+    const result = await this.service.getComments({ reviewId, offset, limit: query.limit });
+    return res.status(200).json(result);
+  };
+
+  addComment = async (req: Request, res: Response) => {
+    const authUser = await this.resolveAuthUser(req);
+    if (!authUser) {
+      return res.status(401).json({ error: 'Sesión no válida' });
+    }
+    const { reviewId } = res.locals.validated.params as ReviewIdParams;
+    const { body } = req.body as CommentBodyDto;
+    try {
+      const comment = await this.service.addComment(reviewId, authUser.id, authUser.name, body);
+      return res.status(201).json(comment);
+    } catch (error) {
+      return res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  updateComment = async (req: Request, res: Response) => {
+    const authUser = await this.resolveAuthUser(req);
+    if (!authUser) {
+      return res.status(401).json({ error: 'Sesión no válida' });
+    }
+    const { reviewId, commentId } = res.locals.validated.params as CommentIdParams;
+    const { body } = req.body as CommentBodyDto;
+    const comment = await this.service.updateComment(reviewId, commentId, authUser.id, body);
+    if (!comment) {
+      return res.status(404).json({ error: 'Comentario no encontrado' });
+    }
+    return res.status(200).json(comment);
+  };
+
+  deleteComment = async (req: Request, res: Response) => {
+    const authUser = await this.resolveAuthUser(req);
+    if (!authUser) {
+      return res.status(401).json({ error: 'Sesión no válida' });
+    }
+    const { reviewId, commentId } = res.locals.validated.params as CommentIdParams;
+    const deleted = await this.service.deleteComment(reviewId, commentId, authUser.id);
+    return deleted ? res.status(204).send() : res.status(404).json({ error: 'Comentario no encontrado' });
+  };
 }

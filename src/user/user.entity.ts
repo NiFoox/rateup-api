@@ -1,10 +1,13 @@
-export class User {
-  constructor(
-    public username: string,
-    public email: string,
-    public passwordHash: string,
-    public isActive: boolean = true,
-    public createdAt: Date = new Date(),
-    public id?: number
-  ) {}
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  roles: string[];
+  active: boolean;
+  createdAt: Date;
+  updatedAt?: Date | null;
+}
+
+export interface UserWithSecrets extends User {
+  passwordHash: string | null;
 }

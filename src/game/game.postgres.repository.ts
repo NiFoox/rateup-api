@@ -1,6 +1,7 @@
-import { Pool } from 'pg';
 import { Game } from './game.entity.js';
 import { GameRepository } from './game.repository.interface.js';
+
+type Pool = import('pg').Pool;
 
 export class GamePostgresRepository implements GameRepository {
   constructor(private readonly db: Pool) {

@@ -1,19 +1,19 @@
 import express from 'express';
 import helmet from 'helmet';
-import reviewRouter from './review/review.routes.js';
 import buildGameRouter from './game/game.routes.js';
 import { container } from './shared/container.js';
-import { userRoutes } from './user/user.routes.js';
-import { authRoutes } from './auth/auth.routes.js';
+import { buildUserRouter } from './user/user.routes.js';
+import { buildAuthRouter } from './auth/auth.routes.js';
+import { buildReviewRouter } from './review/review.routes.js';
 
 const app = express();
-app.use(express.json({ limit: '100kb' })); // Limitar tamaño de cuerpo
-app.use(helmet()); // Seguridad básica
+app.use(express.json({ limit: '100kb' }));
+app.use(helmet());
 
-app.use('/reviews', reviewRouter);
-app.use('/games', buildGameRouter(container.gameRepository));
-app.use('/api/users', userRoutes);
-app.use('/api/auth', authRoutes);
+app.use('/api/reviews', buildReviewRouter(container.reviewController));
+app.use('/api/games', buildGameRouter(container.gameRepository));
+app.use('/api/users', buildUserRouter(container.userController));
+app.use('/api/auth', buildAuthRouter(container.authController));
 
 export default app;
 

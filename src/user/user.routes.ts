@@ -1,13 +1,33 @@
-import express from 'express';
+import { Router } from 'express';
 import { UserController } from './user.controller.js';
+import {
+  CreateUserSchema,
+  SetStatusSchema,
+  UpdateUserSchema,
+  UserIdParamSchema,
+  UserListQuerySchema,
+} from './validators/user.validation.js';
+import { validateBody, validateParams, validateQuery } from '../shared/middlewares/validate.js';
 
-const router = express.Router();
-const controller = new UserController();
+export function buildUserRouter(controller: UserController) {
+  const router = Router();
 
-router.get('/:id', (req, res) => controller.getById(req, res));
-router.get('/', (req, res) => controller.getAll(req, res));
-router.post('/', (req, res) => controller.create(req, res));
-router.put('/:id', (req, res) => controller.update(req, res));
-router.delete('/:id', (req, res) => controller.delete(req, res));
+  router.get('/', validateQuery(UserListQuerySchema), controller.list);
+  router.get('/:id', validateParams(UserIdParamSchema), controller.getById);
+  router.post('/', validateBody(CreateUserSchema), controller.create);
+  router.put(
+    '/:id',
+    validateParams(UserIdParamSchema),
+    validateBody(UpdateUserSchema),
+    controller.update,
+  );
+  router.delete('/:id', validateParams(UserIdParamSchema), controller.remove);
+  router.patch(
+    '/:id/status',
+    validateParams(UserIdParamSchema),
+    validateBody(SetStatusSchema),
+    controller.setStatus,
+  );
 
-export { router as userRoutes };
+  return router;
+}
