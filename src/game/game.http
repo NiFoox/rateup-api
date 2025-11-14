@@ -1,30 +1,38 @@
-### obtener todos los games (paginado)
-GET http://localhost:3000/games?page=1&limit=10
+@host = http://localhost:3000/api
+@gameId = 4
 
-### obtener todos los games (sin paginar)
-GET http://localhost:3000/games/?all=true
+### Listar juegos paginados con filtros opcionales
+GET {{host}}/games?page=1&limit=10&search=vania&genre=action
+Accept: application/json
 
-### obtener un game
-GET http://localhost:3000/games/4
+### Obtener todos los juegos (sin paginación)
+GET {{host}}/games?all=true
+Accept: application/json
 
-### crear un nuevo game
-POST http://localhost:3000/games
+### Obtener un juego por id
+GET {{host}}/games/{{gameId}}
+Accept: application/json
+
+### Crear un nuevo juego
+POST {{host}}/games
 Content-Type: application/json
+Accept: application/json
 
 {
-  "name": "GTA 5",
-  "description": "Juego de mundo abierto",
-  "genre": "action"
+  "name": "Hollow Knight: Silksong",
+  "description": "Metroidvania desafiante desarrollado por Team Cherry.",
+  "genre": "metroidvania"
 }
 
-### modificar un game (PATCH - recurso parcial)
-PATCH http://localhost:3000/games/4
+### Actualizar parcialmente un juego
+PATCH {{host}}/games/{{gameId}}
 Content-Type: application/json
+Accept: application/json
 
 {
-  "description": "Descripción actualizada sin tocar el nombre",
+  "description": "Edición definitiva con todos los contenidos liberados.",
   "genre": "adventure"
 }
 
-### borrar un game
-DELETE http://localhost:3000/games/1
+### Eliminar un juego
+DELETE {{host}}/games/{{gameId}}

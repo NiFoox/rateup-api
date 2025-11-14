@@ -1,0 +1,21 @@
+@host = http://localhost:3000/api
+@authToken = {{login.response.body.accessToken}}
+
+### Iniciar sesión y obtener tokens
+# @name login
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Secret123!",
+  "remember": true
+}
+
+### Cerrar sesión de la sesión actual
+POST {{host}}/auth/logout
+Authorization: Bearer {{authToken}}
+
+### Consultar el usuario autenticado
+GET {{host}}/auth/me
+Authorization: Bearer {{authToken}}

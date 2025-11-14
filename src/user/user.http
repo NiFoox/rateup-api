@@ -1,39 +1,53 @@
-### Obtener usuario por id
-GET http://localhost:3000/api/users/1
+@host = http://localhost:3000/api
+@userId = 2f5e7c1a-9c6d-4b4b-8e2a-1234567890ab
+
+### Listar usuarios con filtros y paginación
+GET {{host}}/users?page=1&limit=20&search=ana&sort=name&dir=asc&role=moderator&active=true
 Accept: application/json
 
-### Listar usuarios con paginación y búsqueda
-GET http://localhost:3000/api/users?page=1&pageSize=5&search=admin
+### Obtener un usuario por id
+GET {{host}}/users/{{userId}}
 Accept: application/json
 
-### Crear usuario
-POST http://localhost:3000/api/users
+### Crear un nuevo usuario
+POST {{host}}/users
 Content-Type: application/json
+Accept: application/json
 
 {
-  "username": "newuser",
-  "email": "newuser@example.com",
+  "name": "Ana Marques",
+  "email": "ana.marques@example.com",
+  "roles": [
+    "moderator",
+    "editor"
+  ],
+  "active": true,
   "password": "Secret123!"
 }
 
-### Actualizar usuario
-PUT http://localhost:3000/api/users/1
+### Actualizar un usuario (reemplazo completo)
+PUT {{host}}/users/{{userId}}
 Content-Type: application/json
+Accept: application/json
 
 {
-  "username": "admin",
-  "email": "admin@example.com",
-  "isActive": true
+  "name": "Ana Marques",
+  "email": "ana.marques@example.com",
+  "roles": [
+    "moderator"
+  ],
+  "active": false,
+  "password": "NewSecret456!"
 }
 
-### Eliminar usuario
-DELETE http://localhost:3000/api/users/1
+### Eliminar un usuario
+DELETE {{host}}/users/{{userId}}
 
-### Login
-POST http://localhost:3000/api/auth/login
+### Actualizar solo el estado activo del usuario
+PATCH {{host}}/users/{{userId}}/status
 Content-Type: application/json
+Accept: application/json
 
 {
-  "usernameOrEmail": "admin",
-  "password": "Password123!"
+  "active": true
 }
