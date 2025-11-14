@@ -1,12 +1,61 @@
-POST http://localhost:3000/api/reviews
+@host = http://localhost:3000/api
+@reviewId = 3fa85f64-5717-4562-b3fc-2c963f66afa6
+@commentId = 74e28c4d-9b72-4f03-a2a1-9876543210ff
+@authToken = {{login.response.body.accessToken}}
+
+### Iniciar sesión para probar votos y comentarios
+# @name login
+POST {{host}}/auth/login
 Content-Type: application/json
 
 {
-  "review": {
-    "title": "Great Product!",
-    "content": "I really enjoyed using this product. It exceeded my expectations in every way.",
-    "rating": 5,
-    "product_id": "12345",
-    "user_id": "67890"
-  }
+  "email": "ana.marques@example.com",
+  "password": "Secret123!"
 }
+
+### Listar reseñas con filtros
+GET {{host}}/reviews?page=1&limit=10&search=metroid&tag=analysis&game=Hollow%20Knight&sort=hot
+Accept: application/json
+
+### Obtener una reseña por id (incluye el voto del usuario autenticado si existe)
+GET {{host}}/reviews/{{reviewId}}
+Accept: application/json
+Authorization: Bearer {{authToken}}
+
+### Registrar o actualizar un voto sobre una reseña
+POST {{host}}/reviews/{{reviewId}}/votes
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "value": 1
+}
+
+### Listar comentarios de una reseña
+GET {{host}}/reviews/{{reviewId}}/comments?page=1&limit=5
+Accept: application/json
+
+### Agregar un comentario a una reseña
+POST {{host}}/reviews/{{reviewId}}/comments
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "body": "Este análisis explica perfecto el balance del juego."
+}
+
+### Actualizar un comentario existente
+PATCH {{host}}/reviews/{{reviewId}}/comments/{{commentId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "body": "Actualizado tras completar el DLC."
+}
+
+### Eliminar un comentario
+DELETE {{host}}/reviews/{{reviewId}}/comments/{{commentId}}
+Authorization: Bearer {{authToken}}
