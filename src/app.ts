@@ -10,8 +10,8 @@ const app = express();
 app.use(express.json({ limit: '100kb' })); // Limitar tamaño de cuerpo
 app.use(helmet()); // Seguridad básica
 
-app.use('/reviews', reviewRouter);
-app.use('/games', buildGameRouter(container.gameRepository));
+app.use('/api/reviews', reviewRouter);
+app.use('/api/games', buildGameRouter(container.gameRepository));
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 
