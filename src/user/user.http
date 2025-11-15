@@ -15,14 +15,14 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "name": "Ana Marques",
-  "email": "ana.marques@example.com",
+  "name": "aaaaaaaaaaaaaa",
+  "email": "demo@demo.com",
   "roles": [
-    "moderator",
+    "admin",
     "editor"
   ],
   "active": true,
-  "password": "Secret123!"
+  "password": "Demo1234"
 }
 
 ### Actualizar un usuario (reemplazo completo)
@@ -31,13 +31,13 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "name": "Ana Marques",
-  "email": "ana.marques@example.com",
+  "name": "aaaaa",
+  "email": "demo@demo.com",
   "roles": [
     "moderator"
   ],
   "active": false,
-  "password": "NewSecret456!"
+  "password": "Demo1234"
 }
 
 ### Eliminar un usuario

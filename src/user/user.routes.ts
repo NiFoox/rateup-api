@@ -14,7 +14,7 @@ export function buildUserRouter(controller: UserController) {
 
   router.get('/', validateQuery(UserListQuerySchema), controller.list);
   router.get('/:id', validateParams(UserIdParamSchema), controller.getById);
-  router.post('/', validateBody(CreateUserSchema), controller.create);
+  router.post('/', controller.create);
   router.put(
     '/:id',
     validateParams(UserIdParamSchema),
