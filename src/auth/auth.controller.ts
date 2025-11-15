@@ -1,16 +1,15 @@
 import { Request, Response } from 'express';
-import { LoginRequestDto } from '../user/dto/login-request.dto.js';
-import { UserService } from '../user/user.service.js';
-import { UserPostgresRepository } from '../user/user.postgres.repository.js';
-
-const service = new UserService(new UserPostgresRepository());
+import type { UserService } from '../user/user.service.js';
+import type { AuthLoginDTO } from './validators/auth.validation.js';
 
 export class AuthController {
+  constructor(private readonly userService: UserService) {}
+
   async login(req: Request, res: Response) {
-    const dto = req.body as LoginRequestDto;
+    const dto = (res.locals?.validated?.body as AuthLoginDTO) ?? (req.body as AuthLoginDTO);
 
     try {
-      const response = await service.login(dto);
+      const response = await this.userService.login(dto);
       return res.json(response);
     } catch (error) {
       if (error instanceof Error) {

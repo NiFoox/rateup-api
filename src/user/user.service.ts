@@ -1,12 +1,32 @@
-import { hashPassword, verifyPassword } from '../common/password.util.js';
-import { CreateUserDto } from './dto/create-user.dto.js';
-import { LoginRequestDto } from './dto/login-request.dto.js';
-import { LoginResponseDto } from './dto/login-response.dto.js';
-import { PaginatedUsersDto, UserDto } from './dto/user.dto.js';
-import { UpdateUserDto } from './dto/update-user.dto.js';
+import { randomBytes } from 'crypto';
 import { User } from './user.entity.js';
 import type { UserRepository } from './user.repository.interface.js';
-import { randomBytes } from 'crypto';
+import type {
+  UserCreateDTO,
+  UserUpdateDTO,
+  UserListQueryDTO,
+} from './validators/user.validation.js';
+
+export interface UserDto {
+  id: number;
+  username: string;
+  email: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface PaginatedUsersDto {
+  data: UserDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface LoginResponseDto {
+  success: boolean;
+  token: string;
+  expiresAt: string;
+}
 
 export class UserService {
   constructor(private readonly repository: UserRepository) {}
@@ -17,11 +37,13 @@ export class UserService {
       username: user.username,
       email: user.email,
       isActive: user.isActive,
-      createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : new Date(user.createdAt).toISOString(),
+      createdAt: user.createdAt instanceof Date
+        ? user.createdAt.toISOString()
+        : new Date(user.createdAt).toISOString(),
     };
   }
 
-  async create(dto: CreateUserDto): Promise<UserDto> {
+  async create(dto: UserCreateDTO): Promise<UserDto> {
     if (!dto.username || !dto.email || !dto.password) {
       throw new Error('INVALID_DATA');
     }
@@ -36,8 +58,7 @@ export class UserService {
       throw new Error('EMAIL_EXISTS');
     }
 
-    const passwordHash = await hashPassword(dto.password);
-    const user = new User(dto.username, dto.email, passwordHash, true);
+    const user = new User(dto.username, dto.email, dto.password, true);
     const created = await this.repository.create(user);
     return this.toDto(created);
   }
@@ -47,10 +68,10 @@ export class UserService {
     return user ? this.toDto(user) : null;
   }
 
-  async search(page = 1, pageSize = 10, searchTerm?: string): Promise<PaginatedUsersDto> {
-    const safePage = page > 0 ? page : 1;
-    const safePageSize = pageSize > 0 ? pageSize : 10;
-    const { data, total } = await this.repository.search(safePage, safePageSize, searchTerm);
+  async search(query: UserListQueryDTO): Promise<PaginatedUsersDto> {
+    const safePage = query.page > 0 ? query.page : 1;
+    const safePageSize = query.pageSize > 0 ? query.pageSize : 10;
+    const { data, total } = await this.repository.search(safePage, safePageSize, query.search);
     return {
       data: data.map((u) => this.toDto(u)),
       total,
@@ -59,7 +80,7 @@ export class UserService {
     };
   }
 
-  async update(id: number, dto: UpdateUserDto): Promise<UserDto | null> {
+  async update(id: number, dto: UserUpdateDTO): Promise<UserDto | null> {
     const existing = await this.repository.findById(id);
     if (!existing) {
       return null;
@@ -89,6 +110,9 @@ export class UserService {
     if (dto.isActive !== undefined) {
       payload.isActive = dto.isActive;
     }
+    if (dto.password !== undefined) {
+      payload.password = dto.password;
+    }
 
     const updated = await this.repository.update(id, payload);
 
@@ -99,19 +123,21 @@ export class UserService {
     return this.repository.delete(id);
   }
 
-  async login(dto: LoginRequestDto): Promise<LoginResponseDto> {
+  async login(dto: { usernameOrEmail: string; password: string }): Promise<LoginResponseDto> {
     if (!dto.usernameOrEmail || !dto.password) {
       throw new Error('INVALID_DATA');
     }
 
     const identifier = dto.usernameOrEmail;
-    const user = (await this.repository.findByUsername(identifier)) ?? (await this.repository.findByEmail(identifier));
+    const user =
+      (await this.repository.findByUsername(identifier)) ??
+      (await this.repository.findByEmail(identifier));
 
     if (!user || !user.isActive) {
       throw new Error('INVALID_CREDENTIALS');
     }
 
-    const validPassword = await verifyPassword(dto.password, user.passwordHash);
+    const validPassword = dto.password === user.password;
     if (!validPassword) {
       throw new Error('INVALID_CREDENTIALS');
     }

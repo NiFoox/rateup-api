@@ -1,9 +1,14 @@
-import express from 'express';
+import { Router } from 'express';
+import { validateBody } from '../shared/middlewares/validate.js';
 import { AuthController } from './auth.controller.js';
+import type { UserService } from '../user/user.service.js';
+import { AuthLoginSchema } from './validators/auth.validation.js';
 
-const router = express.Router();
-const controller = new AuthController();
+export default function buildAuthRouter(userService: UserService) {
+  const router = Router();
+  const controller = new AuthController(userService);
 
-router.post('/login', (req, res) => controller.login(req, res));
+  router.post('/login', validateBody(AuthLoginSchema), controller.login.bind(controller));
 
-export { router as authRoutes };
+  return router;
+}

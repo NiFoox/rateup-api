@@ -2,9 +2,9 @@ export class User {
   constructor(
     public username: string,
     public email: string,
-    public passwordHash: string,
+    public password: string,
     public isActive: boolean = true,
     public createdAt: Date = new Date(),
-    public id?: number
+    public id?: number,
   ) {}
 }

@@ -1,39 +1,44 @@
-### Obtener usuario por id
-GET http://localhost:3000/api/users/1
-Accept: application/json
-
-### Listar usuarios con paginación y búsqueda
-GET http://localhost:3000/api/users?page=1&pageSize=5&search=admin
-Accept: application/json
-
 ### Crear usuario
 POST http://localhost:3000/api/users
 Content-Type: application/json
 
 {
-  "username": "newuser",
-  "email": "newuser@example.com",
-  "password": "Secret123!"
+  "username": "john",
+  "email": "john@example.com",
+  "password": "password123"
 }
 
-### Actualizar usuario
+### Listar usuarios (paginado)
+GET http://localhost:3000/api/users?page=1&pageSize=10
+Content-Type: application/json
+
+### Buscar usuarios por texto (username o email)
+GET http://localhost:3000/api/users?page=1&pageSize=10&search=john
+Content-Type: application/json
+
+### Obtener usuario por id
+GET http://localhost:3000/api/users/1
+Content-Type: application/json
+
+### Actualizar usuario (incluye isActive opcional)
 PUT http://localhost:3000/api/users/1
 Content-Type: application/json
 
 {
-  "username": "admin",
-  "email": "admin@example.com",
+  "username": "john_updated",
+  "email": "john_updated@example.com",
+  "password": "newpassword123",
   "isActive": true
+}
+
+### Desactivar usuario (solo isActive)
+PUT http://localhost:3000/api/users/1
+Content-Type: application/json
+
+{
+  "isActive": false
 }
 
 ### Eliminar usuario
 DELETE http://localhost:3000/api/users/1
-
-### Login
-POST http://localhost:3000/api/auth/login
 Content-Type: application/json
-
-{
-  "usernameOrEmail": "admin",
-  "password": "Password123!"
-}

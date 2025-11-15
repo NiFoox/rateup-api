@@ -1,13 +1,58 @@
-import express from 'express';
+// src/user/user.routes.ts
+import { Router } from 'express';
+import {
+  validateBody,
+  validateParams,
+  validateQuery,
+} from '../shared/middlewares/validate.js';
+import {
+  UserCreateSchema,
+  UserUpdateSchema,
+  UserIdParamSchema,
+  UserListQuerySchema,
+} from './validators/user.validation.js';
 import { UserController } from './user.controller.js';
+import type { UserService } from './user.service.js';
 
-const router = express.Router();
-const controller = new UserController();
+export default function buildUserRouter(service: UserService) {
+  const router = Router();
+  const controller = new UserController(service);
 
-router.get('/:id', (req, res) => controller.getById(req, res));
-router.get('/', (req, res) => controller.getAll(req, res));
-router.post('/', (req, res) => controller.create(req, res));
-router.put('/:id', (req, res) => controller.update(req, res));
-router.delete('/:id', (req, res) => controller.delete(req, res));
+  // GET /api/users/:id
+  router.get(
+    '/:id',
+    validateParams(UserIdParamSchema),
+    controller.getById.bind(controller),
+  );
 
-export { router as userRoutes };
+  // GET /api/users
+  router.get(
+    '/',
+    validateQuery(UserListQuerySchema),
+    controller.getAll.bind(controller),
+  );
+
+  // POST /api/users
+  router.post(
+    '/',
+    validateBody(UserCreateSchema),
+    controller.create.bind(controller),
+  );
+
+  // PUT /api/users/:id
+  router.put(
+    '/:id',
+    validateParams(UserIdParamSchema),
+    validateBody(UserUpdateSchema),
+    controller.update.bind(controller),
+  );
+
+  // DELETE /api/users/:id
+  router.delete(
+    '/:id',
+    validateParams(UserIdParamSchema),
+    controller.delete.bind(controller),
+  );
+
+  return router;
+}

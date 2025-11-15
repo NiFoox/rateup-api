@@ -1,14 +1,14 @@
 ### obtener todos los games (paginado)
-GET http://localhost:3000/games?page=1&limit=10
+GET http://localhost:3000/api/games?page=1&limit=10
 
 ### obtener todos los games (sin paginar)
-GET http://localhost:3000/games/?all=true
+GET http://localhost:3000/api/games/?all=true
 
 ### obtener un game
-GET http://localhost:3000/games/4
+GET http://localhost:3000/api/games/4
 
 ### crear un nuevo game
-POST http://localhost:3000/games
+POST http://localhost:3000/api/games
 Content-Type: application/json
 
 {
@@ -18,7 +18,7 @@ Content-Type: application/json
 }
 
 ### modificar un game (PATCH - recurso parcial)
-PATCH http://localhost:3000/games/4
+PATCH http://localhost:3000/api/games/4
 Content-Type: application/json
 
 {
@@ -27,4 +27,4 @@ Content-Type: application/json
 }
 
 ### borrar un game
-DELETE http://localhost:3000/games/1
+DELETE http://localhost:3000/api/games/1

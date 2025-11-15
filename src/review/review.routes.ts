@@ -1,18 +1,57 @@
 import { Router } from 'express';
+import {
+  validateBody,
+  validateParams,
+  validateQuery,
+} from '../shared/middlewares/validate.js';
 import { ReviewController } from './review.controller.js';
+import {
+  ReviewCreateSchema,
+  ReviewUpdateSchema,
+  ReviewIdParamSchema,
+  ReviewListQuerySchema,
+} from './validators/review.validation.js';
+import type { ReviewRepository } from './review.repository.interface.js';
 
-export const reviewRouter = Router();
+export default function buildReviewRouter(repository: ReviewRepository) {
+  const router = Router();
+  const controller = new ReviewController(repository);
 
-const router = Router();
-const controller = new ReviewController();
+  // Create
+  router.post(
+    '/',
+    validateBody(ReviewCreateSchema),
+    controller.create.bind(controller),
+  );
 
-// Create
-router.post('/', (req, res) => controller.create(req, res));
+  // Get by id
+  router.get(
+    '/:id',
+    validateParams(ReviewIdParamSchema),
+    controller.getById.bind(controller),
+  );
 
-// Read
+  // List
+  router.get(
+    '/',
+    validateQuery(ReviewListQuerySchema),
+    controller.list.bind(controller),
+  );
 
-// Update
-router.put('/:id', (req, res) => controller.update(req, res));
-// Delete
+  // Patch
+  router.patch(
+    '/:id',
+    validateParams(ReviewIdParamSchema),
+    validateBody(ReviewUpdateSchema),
+    controller.patch.bind(controller),
+  );
 
-export default router;
+  // Delete
+  router.delete(
+    '/:id',
+    validateParams(ReviewIdParamSchema),
+    controller.delete.bind(controller),
+  );
+
+  return router;
+}
