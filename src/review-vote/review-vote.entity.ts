@@ -1,9 +1,8 @@
-export class Review {
+export class ReviewVote {
   constructor(
-    public gameId: number,
+    public reviewId: number,
     public userId: number,
-    public content: string,
-    public score: number,
+    public value: 1 | -1,
     public id?: number,
     public createdAt?: Date,
     public updatedAt?: Date,

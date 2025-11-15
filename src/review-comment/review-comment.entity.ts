@@ -1,9 +1,8 @@
-export class Review {
+export class ReviewComment {
   constructor(
-    public gameId: number,
+    public reviewId: number,
     public userId: number,
     public content: string,
-    public score: number,
     public id?: number,
     public createdAt?: Date,
     public updatedAt?: Date,

@@ -1,0 +1,29 @@
+### Upvote (value = 1) una review
+PUT http://localhost:3000/api/reviews/1/votes
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "value": 1
+}
+
+### Downvote (value = -1) la misma review
+PUT http://localhost:3000/api/reviews/1/votes
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "value": -1
+}
+
+### Quitar el voto de ese user
+DELETE http://localhost:3000/api/reviews/1/votes
+Content-Type: application/json
+
+{
+  "userId": 1
+}
+
+### Ver resumen de votos de la review
+GET http://localhost:3000/api/reviews/1/votes
+Content-Type: application/json

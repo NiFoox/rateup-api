@@ -10,6 +10,7 @@ const mapRowToReview = (row: any): Review =>
     row.score,
     row.id,
     row.created_at,
+    row.updated_at,
   );
 
 export class ReviewPostgresRepository implements ReviewRepository {
@@ -92,6 +93,9 @@ export class ReviewPostgresRepository implements ReviewRepository {
       const existing = await this.findById(id);
       return existing ?? undefined;
     }
+
+    // updated_at siempre cambia cuando se hace PATCH
+    fields.push(`updated_at = NOW()`);
 
     values.push(id);
     const { rows } = await this.db.query(
