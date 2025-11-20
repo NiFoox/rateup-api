@@ -40,7 +40,7 @@ export default function buildUserRouter(service: UserService) {
   );
 
   // PUT /api/users/:id
-  router.put(
+  router.patch(
     '/:id',
     validateParams(UserIdParamSchema),
     validateBody(UserUpdateSchema),

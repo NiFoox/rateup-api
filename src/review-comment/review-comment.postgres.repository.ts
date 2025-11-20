@@ -2,6 +2,7 @@
 import { Pool } from 'pg';
 import { ReviewComment } from './review-comment.entity.js';
 import type { ReviewCommentRepository } from './review-comment.repository.interface.js';
+import type { ReviewCommentWithUserDTO } from './dto/review-comment-with-user.dto.js';
 
 const mapRowToComment = (row: any): ReviewComment =>
   new ReviewComment(
@@ -51,6 +52,43 @@ export class ReviewCommentPostgresRepository
       [reviewId, limit, offset],
     );
     return rows.map(mapRowToComment);
+  }
+
+  async getByReviewWithUser(
+    reviewId: number,
+    offset: number,
+    limit: number,
+  ): Promise<ReviewCommentWithUserDTO[]> {
+    const query = `
+      SELECT
+        c.id,
+        c.review_id,
+        c.content,
+        c.created_at,
+        c.updated_at,
+        u.id        AS user_id,
+        u.username  AS user_username
+      FROM review_comments c
+      JOIN users u ON u.id = c.user_id
+      WHERE c.review_id = $1
+      ORDER BY c.created_at ASC
+      OFFSET $2
+      LIMIT $3
+    `;
+
+    const { rows } = await this.db.query(query, [reviewId, offset, limit]);
+
+    return rows.map((row) => ({
+      id: row.id,
+      reviewId: row.review_id,
+      content: row.content,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      user: {
+        id: row.user_id,
+        username: row.user_username,
+      },
+    }));
   }
 
   async update(

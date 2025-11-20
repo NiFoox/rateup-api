@@ -1,13 +1,16 @@
-### obtener todos los games (paginado)
+### Obtener todos los games (paginado básico)
 GET http://localhost:3000/api/games?page=1&limit=10
 
-### obtener todos los games (sin paginar)
-GET http://localhost:3000/api/games/?all=true
+### Obtener todos los games (sin paginar, all=true)
+GET http://localhost:3000/api/games?all=true
 
-### obtener un game
-GET http://localhost:3000/api/games/4
+### Buscar games por texto y género (paginado)
+GET http://localhost:3000/api/games?page=1&limit=10&search=GTA&genre=action
 
-### crear un nuevo game
+### Obtener un game por id
+GET http://localhost:3000/api/games/1
+
+### Crear un nuevo game
 POST http://localhost:3000/api/games
 Content-Type: application/json
 
@@ -17,8 +20,8 @@ Content-Type: application/json
   "genre": "action"
 }
 
-### modificar un game (PATCH - recurso parcial)
-PATCH http://localhost:3000/api/games/4
+### Modificar parcialmente un game (PATCH - recurso parcial)
+PATCH http://localhost:3000/api/games/1
 Content-Type: application/json
 
 {
@@ -26,5 +29,5 @@ Content-Type: application/json
   "genre": "adventure"
 }
 
-### borrar un game
+### Borrar un game
 DELETE http://localhost:3000/api/games/1

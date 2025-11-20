@@ -6,6 +6,7 @@ import buildUserRouter from './user/user.routes.js';
 import buildAuthRouter from './auth/auth.routes.js';
 import buildReviewCommentRouter from './review-comment/review-comment.routes.js';
 import buildReviewVoteRouter from './review-vote/review-vote.routes.js';
+import buildHomeRouter from './home/home.routes.js';
 import { container } from './shared/container.js';
 
 const app = express();
@@ -13,7 +14,12 @@ app.use(express.json({ limit: '100kb' }));
 app.use(helmet());
 
 app.use('/api/games', buildGameRouter(container.gameRepository));
-app.use('/api/reviews', buildReviewRouter(container.reviewRepository));
+app.use('/api/reviews',   buildReviewRouter(
+    container.reviewRepository,
+    container.reviewCommentRepository,
+    container.reviewVoteRepository,
+  ),
+);
 
 // comentarios de review
 app.use(
@@ -30,6 +36,14 @@ app.use(
 app.use('/api/users', buildUserRouter(container.userService));
 app.use('/api/auth', buildAuthRouter(container.userService));
 
+app.use(
+  '/api/home',
+  buildHomeRouter(
+    container.gameRepository,
+    container.reviewRepository,
+  ),
+);
+
 export default app;
 
 // Usar los types en todos los parámetros de los métodos?
@@ -40,3 +54,6 @@ export default app;
 // Falta mejorar dockercompose, para levantar api también
 // Falta manejo de errores?
 // Falta exponer endpoints de healthcheck, métricas, etc.
+
+// TODO:
+// - Refactor dto (matar validators y meter todo en dto por separado)

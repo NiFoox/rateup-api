@@ -26,7 +26,15 @@ Content-Type: application/json
 GET http://localhost:3000/api/reviews?page=1&pageSize=5&userId=1
 Content-Type: application/json
 
-### Actualizar parcialmente una reseña (PATCH)
+### Obtener reseña con relaciones básicas (review + game + user)
+GET http://localhost:3000/api/reviews/1/details
+Content-Type: application/json
+
+### Obtener reseña full (review + game + user + comments + votes)
+GET http://localhost:3000/api/reviews/1/full
+Content-Type: application/json
+
+### Actualizar parcialmente una reseña (PATCH - contenido y/o score)
 PATCH http://localhost:3000/api/reviews/1
 Content-Type: application/json
 

@@ -12,10 +12,21 @@ import {
   ReviewListQuerySchema,
 } from './validators/review.validation.js';
 import type { ReviewRepository } from './review.repository.interface.js';
+import type { ReviewCommentRepository } from '../review-comment/review-comment.repository.interface.js';
+import type { ReviewVoteRepository } from '../review-vote/review-vote.repository.interface.js';
 
-export default function buildReviewRouter(repository: ReviewRepository) {
+
+export default function buildReviewRouter(
+  reviewRepository: ReviewRepository,
+  reviewCommentRepository: ReviewCommentRepository,
+  reviewVoteRepository: ReviewVoteRepository,
+) {
   const router = Router();
-  const controller = new ReviewController(repository);
+  const controller = new ReviewController(
+    reviewRepository,
+    reviewCommentRepository,
+    reviewVoteRepository,
+  );
 
   // Create
   router.post(
@@ -36,6 +47,20 @@ export default function buildReviewRouter(repository: ReviewRepository) {
     '/',
     validateQuery(ReviewListQuerySchema),
     controller.list.bind(controller),
+  );
+
+  // Details
+  router.get(
+    '/:id/details',
+    validateParams(ReviewIdParamSchema),
+    controller.getWithRelations.bind(controller),
+  );
+
+  // Full (review + user + game + comments + votes)
+  router.get(
+    '/:id/full',
+    validateParams(ReviewIdParamSchema),
+    controller.getFull.bind(controller),
   );
 
   // Patch

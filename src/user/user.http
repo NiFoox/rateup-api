@@ -20,8 +20,8 @@ Content-Type: application/json
 GET http://localhost:3000/api/users/1
 Content-Type: application/json
 
-### Actualizar usuario (incluye isActive opcional)
-PUT http://localhost:3000/api/users/1
+### Actualizar parcialmente usuario
+PATCH http://localhost:3000/api/users/1
 Content-Type: application/json
 
 {
@@ -31,8 +31,8 @@ Content-Type: application/json
   "isActive": true
 }
 
-### Desactivar usuario (solo isActive)
-PUT http://localhost:3000/api/users/1
+### Desactivar usuario
+PATCH http://localhost:3000/api/users/1
 Content-Type: application/json
 
 {

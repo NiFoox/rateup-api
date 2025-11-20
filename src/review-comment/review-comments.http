@@ -12,6 +12,10 @@ Content-Type: application/json
 GET http://localhost:3000/api/reviews/1/comments?page=1&pageSize=10
 Content-Type: application/json
 
+### Listar comentarios de una review con datos de usuario (details)
+GET http://localhost:3000/api/reviews/1/comments/details?page=1&pageSize=10
+Content-Type: application/json
+
 ### Editar un comentario (PATCH)
 PATCH http://localhost:3000/api/reviews/1/comments/1
 Content-Type: application/json
@@ -20,7 +24,7 @@ Content-Type: application/json
   "content": "Actualicé mi comentario después de rejugar el título."
 }
 
-### Ver que updated_at cambió
+### Ver que updated_at cambió (otra vez listado)
 GET http://localhost:3000/api/reviews/1/comments?page=1&pageSize=10
 Content-Type: application/json
 

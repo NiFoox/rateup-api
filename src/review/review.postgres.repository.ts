@@ -1,6 +1,8 @@
 import { Pool } from 'pg';
 import { Review } from './review.entity.js';
 import type { ReviewRepository } from './review.repository.interface.js';
+import type { ReviewWithRelationsDTO } from './dto/review-with-relations.dto.js';
+import type { TrendingReviewDTO } from './dto/trending-review.dto.js';
 
 const mapRowToReview = (row: any): Review =>
   new Review(
@@ -66,6 +68,115 @@ export class ReviewPostgresRepository implements ReviewRepository {
 
     return rows.map(mapRowToReview);
   }
+
+  async findByIdWithRelations(id: number): Promise<ReviewWithRelationsDTO | null> {
+    const query = `
+      SELECT
+        r.id,
+        r.content,
+        r.score,
+        r.created_at,
+        r.updated_at,
+        u.id   AS user_id,
+        u.username AS user_username,
+        u.email    AS user_email,
+        g.id   AS game_id,
+        g.name AS game_name,
+        g.genre AS game_genre
+      FROM reviews r
+      JOIN users u ON u.id = r.user_id
+      JOIN games g ON g.id = r.game_id
+      WHERE r.id = $1
+    `;
+
+    const { rows } = await this.db.query(query, [id]);
+
+    if (!rows[0]) {
+      return null;
+    }
+
+    const row = rows[0];
+
+    const dto: ReviewWithRelationsDTO = {
+      id: row.id,
+      content: row.content,
+      score: row.score,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      user: {
+        id: row.user_id,
+        username: row.user_username,
+        email: row.user_email,
+      },
+      game: {
+        id: row.game_id,
+        name: row.game_name,
+        genre: row.game_genre,
+      },
+    };
+
+    return dto;
+  }
+
+  async getTrendingReviews(
+    limit: number,
+    daysWindow: number,
+  ): Promise<TrendingReviewDTO[]> {
+    const query = `
+      SELECT
+        r.id,
+        r.content,
+        r.score,
+        r.created_at,
+        u.id   AS user_id,
+        u.username AS user_username,
+        g.id   AS game_id,
+        g.name AS game_name,
+        g.genre AS game_genre,
+        COALESCE(SUM(rv.value), 0) AS vote_score
+      FROM reviews r
+      JOIN users u ON u.id = r.user_id
+      JOIN games g ON g.id = r.game_id
+      LEFT JOIN review_votes rv
+        ON rv.review_id = r.id
+       AND rv.created_at >= NOW() - ($1 || ' days')::INTERVAL
+      WHERE r.created_at >= NOW() - ($1 || ' days')::INTERVAL
+      GROUP BY
+        r.id,
+        r.content,
+        r.score,
+        r.created_at,
+        u.id,
+        u.username,
+        g.id,
+        g.name,
+        g.genre
+      ORDER BY
+        vote_score DESC,
+        r.created_at DESC
+      LIMIT $2
+    `;
+
+    const { rows } = await this.db.query(query, [daysWindow, limit]);
+
+    return rows.map((row) => ({
+      id: row.id,
+      content: row.content,
+      score: row.score,
+      createdAt: row.created_at,
+      voteScore: Number(row.vote_score),
+      user: {
+        id: row.user_id,
+        username: row.user_username,
+      },
+      game: {
+        id: row.game_id,
+        name: row.game_name,
+        genre: row.game_genre,
+      },
+    }));
+  }
+
 
   async update(id: number, data: Partial<Review>): Promise<Review | undefined> {
     const fields: string[] = [];

@@ -62,7 +62,7 @@ export class UserController {
     }
   }
 
-  // PUT /api/users/:id
+  // PATCH /api/users/:id
   async update(req: Request, res: Response) {
     const params: UserIdParamDTO =
       (res.locals?.validated?.params as UserIdParamDTO) ??

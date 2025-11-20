@@ -37,6 +37,14 @@ export default function buildReviewCommentRouter(
     controller.list.bind(controller),
   );
 
+  // GET /api/reviews/:reviewId/comments/details
+  router.get(
+    '/details',
+    validateParams(ReviewCommentBaseParamsSchema),
+    validateQuery(ReviewCommentListQuerySchema),
+    controller.listWithUser.bind(controller),
+  );
+
   // PATCH /api/reviews/:reviewId/comments/:commentId
   router.patch(
     '/:commentId',

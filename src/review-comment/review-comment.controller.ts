@@ -70,6 +70,50 @@ export class ReviewCommentController {
     res.json({ reviewId, page, pageSize, data: comments });
   }
 
+  // GET /api/reviews/:reviewId/comments/details
+  async listWithUser(req: Request, res: Response): Promise<void> {
+    try {
+      const params: ReviewCommentBaseParamsDTO =
+        (res.locals?.validated?.params as ReviewCommentBaseParamsDTO) ??
+        ReviewCommentBaseParamsSchema.parse(req.params);
+
+      const query: ReviewCommentListQueryDTO =
+        (res.locals?.validated?.query as ReviewCommentListQueryDTO) ??
+        ReviewCommentListQuerySchema.parse(req.query);
+
+      const { reviewId } = params;
+
+      const page = query.page ?? 1;
+      const pageSize = query.pageSize ?? 20;
+
+      const offset = (page - 1) * pageSize;
+      const limit = pageSize;
+
+      const comments = await this.repository.getByReviewWithUser(
+        reviewId,
+        offset,
+        limit,
+      );
+
+      res.json({
+        reviewId,
+        page,
+        pageSize,
+        count: comments.length,
+        items: comments,
+      });
+    } catch (error) {
+      if ((error as any)?.name === 'ZodError') {
+        res
+          .status(400)
+          .json({ message: 'Invalid data', details: (error as any).errors });
+        return;
+      }
+
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+  
   // PATCH /api/reviews/:reviewId/comments/:commentId
   async patch(req: Request, res: Response): Promise<void> {
     try {
