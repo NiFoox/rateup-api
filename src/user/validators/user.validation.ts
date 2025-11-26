@@ -1,6 +1,5 @@
 // src/user/validators/user.validation.ts
 import { z } from 'zod';
-import { is } from 'zod/locales';
 
 // helper: "" -> undefined para default/optional
 const emptyToUndef = (rawValue: unknown) =>
