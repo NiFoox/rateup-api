@@ -34,7 +34,7 @@ app.use(
 );
 
 app.use('/api/users', buildUserRouter(container.userService));
-app.use('/api/auth', buildAuthRouter(container.userService));
+app.use('/api/auth', buildAuthRouter(container.authService));
 
 app.use(
   '/api/home',

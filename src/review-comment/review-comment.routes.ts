@@ -4,6 +4,7 @@ import {
   validateParams,
   validateQuery,
 } from '../shared/middlewares/validate.js';
+import { requireAuth } from '../shared/middlewares/auth.js';
 import { ReviewCommentController } from './review-comment.controller.js';
 import {
   ReviewCommentBaseParamsSchema,
@@ -21,15 +22,16 @@ export default function buildReviewCommentRouter(
   const router = Router({ mergeParams: true });
   const controller = new ReviewCommentController(repository);
 
-  // POST /api/reviews/:reviewId/comments
+  // POST /api/reviews/:reviewId/comments (requiere login)
   router.post(
     '/',
+    requireAuth,
     validateParams(ReviewCommentBaseParamsSchema),
     validateBody(ReviewCommentCreateSchema),
     controller.create.bind(controller),
   );
 
-  // GET /api/reviews/:reviewId/comments
+  // GET /api/reviews/:reviewId/comments - público
   router.get(
     '/',
     validateParams(ReviewCommentBaseParamsSchema),
@@ -37,7 +39,7 @@ export default function buildReviewCommentRouter(
     controller.list.bind(controller),
   );
 
-  // GET /api/reviews/:reviewId/comments/details
+  // GET /api/reviews/:reviewId/comments/details - público
   router.get(
     '/details',
     validateParams(ReviewCommentBaseParamsSchema),
@@ -45,17 +47,19 @@ export default function buildReviewCommentRouter(
     controller.listWithUser.bind(controller),
   );
 
-  // PATCH /api/reviews/:reviewId/comments/:commentId
+  // PATCH /api/reviews/:reviewId/comments/:commentId (requiere login)
   router.patch(
     '/:commentId',
+    requireAuth,
     validateParams(ReviewCommentWithIdParamsSchema),
     validateBody(ReviewCommentUpdateSchema),
     controller.patch.bind(controller),
   );
 
-  // DELETE /api/reviews/:reviewId/comments/:commentId
+  // DELETE /api/reviews/:reviewId/comments/:commentId (requiere login)
   router.delete(
     '/:commentId',
+    requireAuth,
     validateParams(ReviewCommentWithIdParamsSchema),
     controller.delete.bind(controller),
   );

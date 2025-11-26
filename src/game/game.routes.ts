@@ -4,6 +4,7 @@ import {
   validateParams,
   validateQuery,
 } from '../shared/middlewares/validate.js';
+import { requireAuth, requireRole } from '../shared/middlewares/auth.js';
 import {
   GameCreateSchema,
   GameUpdateSchema,
@@ -17,38 +18,44 @@ export default function buildGameRouter(repo: GameRepository) {
   const gameRouter = Router();
   const controller = new GameController(repo);
 
-  // Create
+  // Create (solo ADMIN)
   gameRouter.post(
     '/',
+    requireAuth,
+    requireRole('ADMIN'),
     validateBody(GameCreateSchema),
     controller.create.bind(controller),
   );
 
-  // Read (by id)
+  // Read (by id) - público
   gameRouter.get(
     '/:id',
     validateParams(GameIdParamSchema),
     controller.getById.bind(controller),
   );
 
-  // List (paginado / filtros)
+  // List (paginado / filtros) - público
   gameRouter.get(
     '/',
     validateQuery(GameListQuerySchema),
     controller.list.bind(controller),
   );
 
-  // Update (PATCH)
+  // Update (PATCH) - solo ADMIN
   gameRouter.patch(
     '/:id',
+    requireAuth,
+    requireRole('ADMIN'),
     validateParams(GameIdParamSchema),
     validateBody(GameUpdateSchema),
     controller.patch.bind(controller),
   );
 
-  // Delete
+  // Delete - solo ADMIN
   gameRouter.delete(
     '/:id',
+    requireAuth,
+    requireRole('ADMIN'),
     validateParams(GameIdParamSchema),
     controller.delete.bind(controller),
   );

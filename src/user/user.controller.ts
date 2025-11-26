@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { UserService } from './user.service.js';
 import {
   UserCreateSchema,
@@ -14,6 +14,36 @@ import {
 export class UserController {
   constructor(private readonly service: UserService) {}
 
+  // POST /api/users
+  async create(req: Request, res: Response) {
+    const body: UserCreateDTO =
+      (res.locals?.validated?.body as UserCreateDTO) ??
+      UserCreateSchema.parse(req.body);
+
+    try {
+      const user = await this.service.create(body);
+      return res.status(201).json(user);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'USER_ALREADY_EXISTS') {
+        return res
+          .status(409)
+          .json({ error: 'El nombre de usuario o email ya existen' });
+      }
+
+      return res.status(500).json({ error: 'Error al crear usuario' });
+    }
+  }
+
+  // GET /api/users
+  async list(req: Request, res: Response) {
+    const query: UserListQueryDTO =
+      (res.locals?.validated?.query as UserListQueryDTO) ??
+      UserListQuerySchema.parse(req.query);
+
+    const result = await this.service.list(query);
+    return res.json(result);
+  }
+
   // GET /api/users/:id
   async getById(req: Request, res: Response) {
     const params: UserIdParamDTO =
@@ -22,44 +52,11 @@ export class UserController {
 
     const user = await this.service.findById(params.id);
 
-    return user
-      ? res.json(user)
-      : res.status(404).json({ error: 'Usuario no encontrado' });
-  }
-
-  // GET /api/users
-  async getAll(req: Request, res: Response) {
-    const query: UserListQueryDTO =
-      (res.locals?.validated?.query as UserListQueryDTO) ??
-      UserListQuerySchema.parse(req.query);
-
-    const result = await this.service.search(query);
-    return res.json(result);
-  }
-
-  // POST /api/users
-  async create(req: Request, res: Response) {
-    const dto: UserCreateDTO =
-      (res.locals?.validated?.body as UserCreateDTO) ??
-      UserCreateSchema.parse(req.body);
-
-    try {
-      const user = await this.service.create(dto);
-      return res.status(201).json(user);
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === 'INVALID_DATA') {
-          return res.status(400).json({ error: 'Datos inválidos' });
-        }
-        if (error.message === 'USERNAME_EXISTS') {
-          return res.status(409).json({ error: 'El nombre de usuario ya existe' });
-        }
-        if (error.message === 'EMAIL_EXISTS') {
-          return res.status(409).json({ error: 'El email ya está registrado' });
-        }
-      }
-      return res.status(500).json({ error: 'Error interno del servidor' });
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
+
+    return res.json(user);
   }
 
   // PATCH /api/users/:id
@@ -68,29 +65,17 @@ export class UserController {
       (res.locals?.validated?.params as UserIdParamDTO) ??
       UserIdParamSchema.parse(req.params);
 
-    const dto: UserUpdateDTO =
+    const body: UserUpdateDTO =
       (res.locals?.validated?.body as UserUpdateDTO) ??
       UserUpdateSchema.parse(req.body);
 
-    try {
-      const updated = await this.service.update(params.id, dto);
+    const updated = await this.service.update(params.id, body);
 
-      if (!updated) {
-        return res.status(404).json({ error: 'Usuario no encontrado' });
-      }
-
-      return res.json(updated);
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === 'USERNAME_EXISTS') {
-          return res.status(409).json({ error: 'El nombre de usuario ya existe' });
-        }
-        if (error.message === 'EMAIL_EXISTS') {
-          return res.status(409).json({ error: 'El email ya está registrado' });
-        }
-      }
-      return res.status(500).json({ error: 'Error interno del servidor' });
+    if (!updated) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
+
+    return res.json(updated);
   }
 
   // DELETE /api/users/:id

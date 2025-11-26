@@ -4,14 +4,16 @@ Content-Type: application/json
 
 {
   "usernameOrEmail": "john",
-  "password": "password123"
+  "password": "password123",
+  "rememberMe": false
 }
 
-### Login con email
+### Login con email + rememberMe
 POST http://localhost:3000/api/auth/login
 Content-Type: application/json
 
 {
   "usernameOrEmail": "john@example.com",
-  "password": "password123"
+  "password": "password123",
+  "rememberMe": true
 }

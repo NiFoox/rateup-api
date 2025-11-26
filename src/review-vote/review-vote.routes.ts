@@ -3,6 +3,7 @@ import {
   validateBody,
   validateParams,
 } from '../shared/middlewares/validate.js';
+import { requireAuth } from '../shared/middlewares/auth.js';
 import { ReviewVoteController } from './review-vote.controller.js';
 import {
   ReviewVoteParamsSchema,
@@ -18,7 +19,7 @@ export default function buildReviewVoteRouter(
   const router = Router({ mergeParams: true });
   const controller = new ReviewVoteController(repository);
 
-  // GET resumen de votos
+  // GET resumen de votos - público
   // GET /api/reviews/:reviewId/votes
   router.get(
     '/',
@@ -26,19 +27,21 @@ export default function buildReviewVoteRouter(
     controller.getSummary.bind(controller),
   );
 
-  // PUT votar / cambiar voto
+  // PUT votar / cambiar voto (requiere login)
   // PUT /api/reviews/:reviewId/votes
   router.put(
     '/',
+    requireAuth,
     validateParams(ReviewVoteParamsSchema),
     validateBody(ReviewVoteBodySchema),
     controller.upsert.bind(controller),
   );
 
-  // DELETE quitar voto
+  // DELETE quitar voto (requiere login)
   // DELETE /api/reviews/:reviewId/votes
   router.delete(
     '/',
+    requireAuth,
     validateParams(ReviewVoteParamsSchema),
     validateBody(ReviewVoteDeleteBodySchema),
     controller.remove.bind(controller),

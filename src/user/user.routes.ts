@@ -14,9 +14,19 @@ import {
 import { UserController } from './user.controller.js';
 import type { UserService } from './user.service.js';
 
-export default function buildUserRouter(service: UserService) {
+export default function buildUserRouter(userService: UserService) {
   const router = Router();
-  const controller = new UserController(service);
+  const controller = new UserController(userService);
+
+  // POST /api/users
+  router.post('/', validateBody(UserCreateSchema), controller.create.bind(controller));
+
+  // GET /api/users?page=&pageSize=&search=
+  router.get(
+    '/',
+    validateQuery(UserListQuerySchema),
+    controller.list.bind(controller),
+  );
 
   // GET /api/users/:id
   router.get(
@@ -25,21 +35,7 @@ export default function buildUserRouter(service: UserService) {
     controller.getById.bind(controller),
   );
 
-  // GET /api/users
-  router.get(
-    '/',
-    validateQuery(UserListQuerySchema),
-    controller.getAll.bind(controller),
-  );
-
-  // POST /api/users
-  router.post(
-    '/',
-    validateBody(UserCreateSchema),
-    controller.create.bind(controller),
-  );
-
-  // PUT /api/users/:id
+  // PATCH /api/users/:id
   router.patch(
     '/:id',
     validateParams(UserIdParamSchema),
