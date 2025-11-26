@@ -1,0 +1,36 @@
+### Obtener todos los games (paginado básico)
+GET http://localhost:3000/api/games?page=1&limit=10
+
+### Obtener todos los games (sin paginar, all=true)
+GET http://localhost:3000/api/games?all=true
+
+### Buscar games por texto y género (paginado)
+GET http://localhost:3000/api/games?page=1&limit=10&search=GTA&genre=action
+
+### Obtener un game por id
+GET http://localhost:3000/api/games/1
+
+### Crear un nuevo game (requiere ADMIN)
+POST http://localhost:3000/api/games
+Content-Type: application/json
+Authorization: Bearer PASTE_ADMIN_JWT_TOKEN_HERE
+
+{
+  "name": "GTA VI",
+  "description": "Juego de mundo abierto",
+  "genre": "action"
+}
+
+### Modificar parcialmente un game (PATCH - requiere ADMIN)
+PATCH http://localhost:3000/api/games/1
+Content-Type: application/json
+Authorization: Bearer PASTE_ADMIN_JWT_TOKEN_HERE
+
+{
+  "description": "Descripción actualizada sin tocar el nombre",
+  "genre": "adventure"
+}
+
+### Borrar un game (requiere ADMIN)
+DELETE http://localhost:3000/api/games/1
+Authorization: Bearer PASTE_ADMIN_JWT_TOKEN_HERE

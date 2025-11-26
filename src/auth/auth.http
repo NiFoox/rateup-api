@@ -1,0 +1,27 @@
+### Register (público)
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "nuevo",
+  "email": "nuevo@example.com",
+  "password": "password123"
+}
+
+### Login
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "usernameOrEmail": "nuevo",
+  "password": "password123",
+  "rememberMe": false
+}
+
+# Copiar el "accessToken" de la respuesta y usalo en el header:
+# Authorization: Bearer <accessToken>
+
+### Ver mi perfil privado (requiere token)
+GET http://localhost:3000/api/auth/me
+Content-Type: application/json
+Authorization: Bearer PASTE_JWT_TOKEN_HERE

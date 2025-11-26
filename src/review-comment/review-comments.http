@@ -1,0 +1,33 @@
+### Crear comentario en una review (requiere usuario logueado)
+POST http://localhost:3000/api/reviews/1/comments
+Content-Type: application/json
+Authorization: Bearer PASTE_JWT_TOKEN_HERE
+
+{
+  "content": "Estoy de acuerdo con esta review, muy buena."
+}
+
+### Listar comentarios de una review (paginado)
+GET http://localhost:3000/api/reviews/1/comments?page=1&pageSize=10
+Content-Type: application/json
+
+### Listar comentarios de una review con datos de usuario (details)
+GET http://localhost:3000/api/reviews/1/comments/details?page=1&pageSize=10
+Content-Type: application/json
+
+### Editar un comentario (solo owner o ADMIN)
+PATCH http://localhost:3000/api/reviews/1/comments/1
+Content-Type: application/json
+Authorization: Bearer PASTE_JWT_TOKEN_HERE
+
+{
+  "content": "Actualicé mi comentario después de rejugar el título."
+}
+
+### Ver que updated_at cambió (otra vez listado)
+GET http://localhost:3000/api/reviews/1/comments?page=1&pageSize=10
+Content-Type: application/json
+
+### Borrar un comentario (solo owner o ADMIN)
+DELETE http://localhost:3000/api/reviews/1/comments/1
+Authorization: Bearer PASTE_JWT_TOKEN_HERE

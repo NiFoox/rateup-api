@@ -1,0 +1,57 @@
+### Crear reseña (requiere usuario logueado)
+# gameId debe existir en la base
+POST http://localhost:3000/api/reviews
+Content-Type: application/json
+Authorization: Bearer PASTE_JWT_TOKEN_HERE
+
+{
+  "gameId": 1,
+  "content": "Juego muy sólido, me gustó mucho el combate.",
+  "score": 5
+}
+
+### Obtener reseña por id
+GET http://localhost:3000/api/reviews/1
+Content-Type: application/json
+
+### Listar reseñas (paginado opcional, filtros opcionales)
+# - page / pageSize: controlan la paginación
+# - gameId: filtra por juego
+# - userId: filtra por usuario
+GET http://localhost:3000/api/reviews?page=1&pageSize=10&gameId=1&userId=1
+Content-Type: application/json
+
+### Listar reseñas de un usuario específico (para vista de perfil público)
+GET http://localhost:3000/api/reviews?page=1&pageSize=10&userId=1
+Content-Type: application/json
+
+### Obtener reseña con relaciones básicas (game + user)
+GET http://localhost:3000/api/reviews/1/details
+Content-Type: application/json
+
+### Obtener reseña completa para detalle (review + user + game + comments + votes)
+GET http://localhost:3000/api/reviews/1/full?commentsPage=1&commentsPageSize=10
+Content-Type: application/json
+
+### Actualizar parcialmente una reseña (solo owner o ADMIN)
+PATCH http://localhost:3000/api/reviews/1
+Content-Type: application/json
+Authorization: Bearer PASTE_JWT_TOKEN_HERE
+
+{
+  "content": "Actualicé la reseña después de terminar el juego al 100%.",
+  "score": 4
+}
+
+### (Opcional) Ver que updated_at de la reseña cambió (otra vez listado/detalle)
+GET http://localhost:3000/api/reviews/1
+Content-Type: application/json
+
+### Eliminar reseña (solo owner o ADMIN)
+DELETE http://localhost:3000/api/reviews/1
+Authorization: Bearer PASTE_JWT_TOKEN_HERE
+
+### Listar mis reseñas (requiere usuario logueado, usa sub del JWT)
+GET http://localhost:3000/api/reviews/me?page=1&pageSize=10
+Content-Type: application/json
+Authorization: Bearer PASTE_JWT_TOKEN_HERE

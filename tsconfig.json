@@ -1,19 +1,19 @@
 {
-     "compilerOptions": {
-       "incremental": true,
-       "target": "es2020",
-       "module": "ES2022",
-       "moduleResolution": "bundler",
-       "sourceMap": true,
-       "outDir": "./dist",
-       "esModuleInterop": true,
-       "forceConsistentCasingInFileNames": true,
-       "strict": true,
-       "alwaysStrict": true,
-       "skipLibCheck": true,
-       "emitDecoratorMetadata": true,
-       "experimentalDecorators": true
-     },
-     "include": ["src//*", "/*.ts"],
-     "exclude": ["node_modules"]
-   }
+  "compilerOptions": {
+    "incremental": true,
+    "target": "es2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "alwaysStrict": true,
+    "skipLibCheck": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true
+  },
+  "include": ["src/**/*", "*.ts", "tests/unit"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/__tests__/**", "coverage"]
+}
