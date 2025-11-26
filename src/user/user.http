@@ -6,7 +6,9 @@ Authorization: Bearer PASTE_ADMIN_JWT_TOKEN_HERE
 {
   "username": "john",
   "email": "john@example.com",
-  "password": "password123"
+  "password": "password123",
+  "roles": ["USER"],
+  "isActive": true
 }
 
 ### Listar usuarios (paginado) - solo ADMIN
