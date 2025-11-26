@@ -1,39 +1,76 @@
-### Obtener usuario por id
-GET http://localhost:3000/api/users/1
-Accept: application/json
-
-### Listar usuarios con paginación y búsqueda
-GET http://localhost:3000/api/users?page=1&pageSize=5&search=admin
-Accept: application/json
-
-### Crear usuario
+### Crear usuario (solo ADMIN, uso administrativo)
 POST http://localhost:3000/api/users
 Content-Type: application/json
+Authorization: Bearer PASTE_ADMIN_JWT_TOKEN_HERE
 
 {
-  "username": "newuser",
-  "email": "newuser@example.com",
-  "password": "Secret123!"
+  "username": "john",
+  "email": "john@example.com",
+  "password": "password123"
 }
 
-### Actualizar usuario
-PUT http://localhost:3000/api/users/1
+### Listar usuarios (paginado) - solo ADMIN
+GET http://localhost:3000/api/users?page=1&pageSize=10
 Content-Type: application/json
+Authorization: Bearer PASTE_ADMIN_JWT_TOKEN_HERE
+
+### Buscar usuarios por texto (username o email) - solo ADMIN
+GET http://localhost:3000/api/users?page=1&pageSize=10&search=john
+Content-Type: application/json
+Authorization: Bearer PASTE_ADMIN_JWT_TOKEN_HERE
+
+### Obtener usuario por id - solo ADMIN
+GET http://localhost:3000/api/users/1
+Content-Type: application/json
+Authorization: Bearer PASTE_ADMIN_JWT_TOKEN_HERE
+
+### Actualizar usuario (dueño o ADMIN) - ejemplo completo con avatar y bio
+PATCH http://localhost:3000/api/users/1
+Content-Type: application/json
+Authorization: Bearer PASTE_JWT_TOKEN_HERE
 
 {
-  "username": "admin",
-  "email": "admin@example.com",
-  "isActive": true
+  "username": "john_updated",
+  "email": "john_updated@example.com",
+  "password": "newpassword123",
+  "isActive": true,
+  "avatarUrl": "https://cdn.example.com/avatars/john.png",
+  "bio": "Jugador tryhard de ranked y fan de los RPG"
 }
 
-### Eliminar usuario
+### Actualizar solo avatar y bio (dueño o ADMIN)
+PATCH http://localhost:3000/api/users/1
+Content-Type: application/json
+Authorization: Bearer PASTE_JWT_TOKEN_HERE
+
+{
+  "avatarUrl": "https://cdn.example.com/avatars/john_v2.png",
+  "bio": "Ahora también juego indies raros"
+}
+
+### Actualizar roles de un usuario (solo ADMIN)
+PATCH http://localhost:3000/api/users/1/roles
+Content-Type: application/json
+Authorization: Bearer PASTE_ADMIN_JWT_TOKEN_HERE
+
+{
+  "roles": ["ADMIN"]
+}
+
+### Desactivar usuario (dueño o ADMIN si actualiza su propio isActive, o ADMIN si lo usa como gestión)
+PATCH http://localhost:3000/api/users/1
+Content-Type: application/json
+Authorization: Bearer PASTE_JWT_TOKEN_HERE
+
+{
+  "isActive": false
+}
+
+### Eliminar usuario (solo ADMIN)
 DELETE http://localhost:3000/api/users/1
-
-### Login
-POST http://localhost:3000/api/auth/login
 Content-Type: application/json
+Authorization: Bearer PASTE_ADMIN_JWT_TOKEN_HERE
 
-{
-  "usernameOrEmail": "admin",
-  "password": "Password123!"
-}
+### Ver perfil público de un usuario (sin auth, sólo datos de perfil y stats)
+GET http://localhost:3000/api/users/profile/1
+Content-Type: application/json

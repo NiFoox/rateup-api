@@ -1,5 +1,11 @@
 import { User } from './user.entity.js';
 
+export interface UserProfileStats {
+  reviewsCount: number;
+  upvotes: number;
+  downvotes: number;
+}
+
 export interface UserRepository {
   create(user: User): Promise<User>;
   findById(id: number): Promise<User | null>;
@@ -8,8 +14,10 @@ export interface UserRepository {
   search(
     page: number,
     pageSize: number,
-    searchTerm?: string
+    searchTerm?: string,
   ): Promise<{ data: User[]; total: number }>;
   update(id: number, data: Partial<User>): Promise<User | undefined>;
   delete(id: number): Promise<boolean>;
+
+  getProfileStats(userId: number): Promise<UserProfileStats>;
 }

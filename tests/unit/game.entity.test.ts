@@ -1,4 +1,4 @@
-import { Game } from '../../game/game.entity.js';
+import { Game } from '../../src/game/game.entity.js';
 
 describe('Game entity', () => {
   it('should create a Game with correct properties', async () => {

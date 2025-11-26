@@ -1,45 +1,132 @@
-import { hashPassword, verifyPassword } from '../common/password.util.js';
-import { CreateUserDto } from './dto/create-user.dto.js';
-import { LoginRequestDto } from './dto/login-request.dto.js';
-import { LoginResponseDto } from './dto/login-response.dto.js';
-import { PaginatedUsersDto, UserDto } from './dto/user.dto.js';
-import { UpdateUserDto } from './dto/update-user.dto.js';
-import { User } from './user.entity.js';
-import type { UserRepository } from './user.repository.interface.js';
-import { randomBytes } from 'crypto';
+// src/user/user.service.ts
+import { User, type UserRole } from './user.entity.js';
+import type {
+  UserRepository,
+  UserProfileStats,
+} from './user.repository.interface.js';
+import type {
+  UserCreateDTO,
+  UserUpdateDTO,
+  UserListQueryDTO,
+} from './validators/user.validation.js';
+import { hashPassword } from '../common/password.util.js';
+
+export interface UserDto {
+  id: number;
+  username: string;
+  email: string;
+  roles: UserRole[];
+  isActive: boolean;
+  createdAt: string;
+  avatarUrl: string | null;
+  bio: string | null;
+}
+
+export interface UserProfileReputation {
+  upvotes: number;
+  downvotes: number;
+  score: number;
+  likesRate: number;
+}
+
+export interface PublicUserProfileDto {
+  id: number;
+  username: string;
+  avatarUrl: string | null;
+  bio: string | null;
+  createdAt: string;
+  stats: {
+    reviewsCount: number;
+    reputation: UserProfileReputation;
+  };
+}
+
+export interface PrivateUserProfileDto extends PublicUserProfileDto {
+  email: string;
+  roles: UserRole[];
+}
 
 export class UserService {
   constructor(private readonly repository: UserRepository) {}
+
+  // ---------- mapeos internos ----------
 
   private toDto(user: User): UserDto {
     return {
       id: user.id!,
       username: user.username,
       email: user.email,
+      roles: user.roles,
       isActive: user.isActive,
-      createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : new Date(user.createdAt).toISOString(),
+      createdAt: user.createdAt.toISOString(),
+      avatarUrl: user.avatarUrl ?? null,
+      bio: user.bio ?? null,
     };
   }
 
-  async create(dto: CreateUserDto): Promise<UserDto> {
-    if (!dto.username || !dto.email || !dto.password) {
-      throw new Error('INVALID_DATA');
-    }
+  private buildReputation(stats: UserProfileStats): UserProfileReputation {
+    const up = stats.upvotes ?? 0;
+    const down = stats.downvotes ?? 0;
+    const totalVotes = up + down;
+    const score = up - down;
+    const likesRate = totalVotes > 0 ? up / totalVotes : 0;
 
-    const existingByUsername = await this.repository.findByUsername(dto.username);
+    return {
+      upvotes: up,
+      downvotes: down,
+      score,
+      likesRate,
+    };
+  }
+
+  // ---------- CRUD básico ----------
+
+  async create(dto: UserCreateDTO): Promise<UserDto> {
+    const existingByUsername = await this.repository.findByUsername(
+      dto.username,
+    );
     if (existingByUsername) {
-      throw new Error('USERNAME_EXISTS');
+      throw new Error('USER_ALREADY_EXISTS');
     }
 
     const existingByEmail = await this.repository.findByEmail(dto.email);
     if (existingByEmail) {
-      throw new Error('EMAIL_EXISTS');
+      throw new Error('USER_ALREADY_EXISTS');
     }
 
     const passwordHash = await hashPassword(dto.password);
-    const user = new User(dto.username, dto.email, passwordHash, true);
+
+    const user = new User(
+      dto.username,
+      dto.email,
+      passwordHash,
+      dto.roles ?? ['USER'], // por defecto
+      dto.isActive ?? true, // por defecto
+    );
+
     const created = await this.repository.create(user);
     return this.toDto(created);
+  }
+
+  async list(query: UserListQueryDTO): Promise<{
+    page: number;
+    pageSize: number;
+    total: number;
+    data: UserDto[];
+  }> {
+    const { page, pageSize, search } = query;
+    const { data, total } = await this.repository.search(
+      page,
+      pageSize,
+      search,
+    );
+
+    return {
+      page,
+      pageSize,
+      total,
+      data: data.map((u) => this.toDto(u)),
+    };
   }
 
   async findById(id: number): Promise<UserDto | null> {
@@ -47,51 +134,44 @@ export class UserService {
     return user ? this.toDto(user) : null;
   }
 
-  async search(page = 1, pageSize = 10, searchTerm?: string): Promise<PaginatedUsersDto> {
-    const safePage = page > 0 ? page : 1;
-    const safePageSize = pageSize > 0 ? pageSize : 10;
-    const { data, total } = await this.repository.search(safePage, safePageSize, searchTerm);
-    return {
-      data: data.map((u) => this.toDto(u)),
-      total,
-      page: safePage,
-      pageSize: safePageSize,
-    };
-  }
-
-  async update(id: number, dto: UpdateUserDto): Promise<UserDto | null> {
+  async update(id: number, dto: UserUpdateDTO): Promise<UserDto | null> {
     const existing = await this.repository.findById(id);
     if (!existing) {
       return null;
     }
 
-    if (dto.username && dto.username !== existing.username) {
-      const userWithUsername = await this.repository.findByUsername(dto.username);
-      if (userWithUsername && userWithUsername.id !== id) {
-        throw new Error('USERNAME_EXISTS');
-      }
-    }
-
-    if (dto.email && dto.email !== existing.email) {
-      const userWithEmail = await this.repository.findByEmail(dto.email);
-      if (userWithEmail && userWithEmail.id !== id) {
-        throw new Error('EMAIL_EXISTS');
-      }
-    }
-
     const payload: Partial<User> = {};
+
     if (dto.username !== undefined) {
       payload.username = dto.username;
     }
     if (dto.email !== undefined) {
       payload.email = dto.email;
     }
+    if (dto.password !== undefined) {
+      payload.passwordHash = await hashPassword(dto.password);
+    }
     if (dto.isActive !== undefined) {
       payload.isActive = dto.isActive;
     }
+    if (dto.avatarUrl !== undefined) {
+      payload.avatarUrl = dto.avatarUrl;
+    }
+    if (dto.bio !== undefined) {
+      payload.bio = dto.bio;
+    }
 
     const updated = await this.repository.update(id, payload);
+    return updated ? this.toDto(updated) : null;
+  }
 
+  async updateRoles(id: number, roles: UserRole[]): Promise<UserDto | null> {
+    const existing = await this.repository.findById(id);
+    if (!existing) {
+      return null;
+    }
+
+    const updated = await this.repository.update(id, { roles });
     return updated ? this.toDto(updated) : null;
   }
 
@@ -99,30 +179,51 @@ export class UserService {
     return this.repository.delete(id);
   }
 
-  async login(dto: LoginRequestDto): Promise<LoginResponseDto> {
-    if (!dto.usernameOrEmail || !dto.password) {
-      throw new Error('INVALID_DATA');
-    }
+  // ---------- Perfiles ----------
 
-    const identifier = dto.usernameOrEmail;
-    const user = (await this.repository.findByUsername(identifier)) ?? (await this.repository.findByEmail(identifier));
-
+  async getPublicProfile(id: number): Promise<PublicUserProfileDto | null> {
+    const user = await this.repository.findById(id);
     if (!user || !user.isActive) {
-      throw new Error('INVALID_CREDENTIALS');
+      return null;
     }
 
-    const validPassword = await verifyPassword(dto.password, user.passwordHash);
-    if (!validPassword) {
-      throw new Error('INVALID_CREDENTIALS');
-    }
-
-    const token = randomBytes(24).toString('hex');
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const statsRaw = await this.repository.getProfileStats(id);
+    const reputation = this.buildReputation(statsRaw);
 
     return {
-      success: true,
-      token,
-      expiresAt,
+      id: user.id!,
+      username: user.username,
+      avatarUrl: user.avatarUrl ?? null,
+      bio: user.bio ?? null,
+      createdAt: user.createdAt.toISOString(),
+      stats: {
+        reviewsCount: statsRaw.reviewsCount,
+        reputation,
+      },
+    };
+  }
+
+  async getPrivateProfile(id: number): Promise<PrivateUserProfileDto | null> {
+    const user = await this.repository.findById(id);
+    if (!user) {
+      return null;
+    }
+
+    const statsRaw = await this.repository.getProfileStats(id);
+    const reputation = this.buildReputation(statsRaw);
+
+    return {
+      id: user.id!,
+      username: user.username,
+      email: user.email,
+      roles: user.roles,
+      avatarUrl: user.avatarUrl ?? null,
+      bio: user.bio ?? null,
+      createdAt: user.createdAt.toISOString(),
+      stats: {
+        reviewsCount: statsRaw.reviewsCount,
+        reputation,
+      },
     };
   }
 }

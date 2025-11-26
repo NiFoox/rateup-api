@@ -1,72 +1,105 @@
-import { Client } from 'pg';
-import { User } from './user.entity.js';
-import { UserRepository } from './user.repository.interface.js';
-
-const client = new Client({
-  host: process.env.POSTGRES_HOST || 'localhost',
-  port: Number(process.env.POSTGRES_PORT) || 5432,
-  user: process.env.POSTGRES_USER || 'rateup',
-  password: process.env.POSTGRES_PASSWORD || 'rateup123',
-  database: process.env.POSTGRES_DB || 'rateupdb',
-});
-
-client.connect();
+import { Pool } from 'pg';
+import { User, type UserRole } from './user.entity.js';
+import type {
+  UserRepository,
+  UserProfileStats,
+} from './user.repository.interface.js';
 
 function mapRowToUser(row: any): User {
+  const roles: UserRole[] = Array.isArray(row.roles) ? row.roles : ['USER'];
+
   return new User(
     row.username,
     row.email,
     row.password_hash,
+    roles,
     row.is_active,
     row.created_at,
-    row.id
+    row.avatar_url ?? null,
+    row.bio ?? null,
+    row.id,
   );
 }
 
 export class UserPostgresRepository implements UserRepository {
+  constructor(private readonly db: Pool) {}
+
   async create(user: User): Promise<User> {
-    const { rows } = await client.query(
-      'INSERT INTO users (username, email, password_hash, is_active) VALUES ($1,$2,$3,$4) RETURNING *',
-      [user.username, user.email, user.passwordHash, user.isActive]
-    );
+    const query = `
+      INSERT INTO users (username, email, password_hash, roles, is_active, avatar_url, bio)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *
+    `;
+    const values = [
+      user.username,
+      user.email,
+      user.passwordHash,
+      user.roles,
+      user.isActive,
+      user.avatarUrl,
+      user.bio,
+    ];
+
+    const { rows } = await this.db.query(query, values);
     return mapRowToUser(rows[0]);
   }
 
   async findById(id: number): Promise<User | null> {
-    const { rows } = await client.query('SELECT * FROM users WHERE id = $1', [id]);
+    const { rows } = await this.db.query('SELECT * FROM users WHERE id = $1', [id]);
     return rows[0] ? mapRowToUser(rows[0]) : null;
   }
 
   async findByUsername(username: string): Promise<User | null> {
-    const { rows } = await client.query('SELECT * FROM users WHERE username = $1', [username]);
+    const { rows } = await this.db.query(
+      'SELECT * FROM users WHERE username = $1',
+      [username],
+    );
     return rows[0] ? mapRowToUser(rows[0]) : null;
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    const { rows } = await client.query('SELECT * FROM users WHERE email = $1', [email]);
+    const { rows } = await this.db.query(
+      'SELECT * FROM users WHERE email = $1',
+      [email],
+    );
     return rows[0] ? mapRowToUser(rows[0]) : null;
   }
 
-  async search(page: number, pageSize: number, searchTerm?: string): Promise<{ data: User[]; total: number }> {
+  async search(
+    page: number,
+    pageSize: number,
+    searchTerm?: string,
+  ): Promise<{ data: User[]; total: number }> {
     const offset = (page - 1) * pageSize;
     const params: any[] = [];
     let whereClause = '';
 
     if (searchTerm) {
       params.push(`%${searchTerm.toLowerCase()}%`);
-      whereClause = 'WHERE LOWER(username) LIKE $1 OR LOWER(email) LIKE $1';
+      whereClause =
+        'WHERE LOWER(username) LIKE $1 OR LOWER(email) LIKE $1';
     }
 
     const totalQuery = `SELECT COUNT(*)::int AS count FROM users ${whereClause}`;
-    const totalResult = await client.query(totalQuery, params);
+    const totalResult = await this.db.query(totalQuery, params);
     const total = Number(totalResult.rows[0]?.count ?? 0);
 
-    const dataParams = [...params];
-    dataParams.push(pageSize, offset);
+    const dataQuery = `
+      SELECT *
+      FROM users
+      ${whereClause}
+      ORDER BY id
+      LIMIT $${params.length + 1}
+      OFFSET $${params.length + 2}
+    `;
 
-    const dataQuery = `SELECT * FROM users ${whereClause} ORDER BY id LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}`;
-    const { rows } = await client.query(dataQuery, dataParams);
-    return { data: rows.map(mapRowToUser), total };
+    const dataParams = [...params, pageSize, offset];
+    const { rows } = await this.db.query(dataQuery, dataParams);
+
+    return {
+      data: rows.map(mapRowToUser),
+      total,
+    };
   }
 
   async update(id: number, data: Partial<User>): Promise<User | undefined> {
@@ -82,28 +115,76 @@ export class UserPostgresRepository implements UserRepository {
       fields.push(`email = $${index++}`);
       values.push(data.email);
     }
-    if (data.isActive !== undefined) {
-      fields.push(`is_active = $${index++}`);
-      values.push(data.isActive);
-    }
     if (data.passwordHash !== undefined) {
       fields.push(`password_hash = $${index++}`);
       values.push(data.passwordHash);
     }
+    if (data.roles !== undefined) {
+      fields.push(`roles = $${index++}`);
+      values.push(data.roles);
+    }
+    if (data.isActive !== undefined) {
+      fields.push(`is_active = $${index++}`);
+      values.push(data.isActive);
+    }
+    if (data.avatarUrl !== undefined) {
+      fields.push(`avatar_url = $${index++}`);
+      values.push(data.avatarUrl);
+    }
+    if (data.bio !== undefined) {
+      fields.push(`bio = $${index++}`);
+      values.push(data.bio);
+    }
 
-    if (!fields.length) {
+    if (fields.length === 0) {
       const existing = await this.findById(id);
       return existing ?? undefined;
     }
 
     values.push(id);
-    const query = `UPDATE users SET ${fields.join(', ')} WHERE id = $${index} RETURNING *`;
-    const { rows } = await client.query(query, values);
+    const query = `
+      UPDATE users
+      SET ${fields.join(', ')}
+      WHERE id = $${index}
+      RETURNING *
+    `;
+
+    const { rows } = await this.db.query(query, values);
     return rows[0] ? mapRowToUser(rows[0]) : undefined;
   }
 
   async delete(id: number): Promise<boolean> {
-    const { rowCount } = await client.query('DELETE FROM users WHERE id = $1', [id]);
+    const { rowCount } = await this.db.query(
+      'DELETE FROM users WHERE id = $1',
+      [id],
+    );
     return (rowCount ?? 0) > 0;
+  }
+
+  // Stats para el perfil
+  async getProfileStats(userId: number): Promise<UserProfileStats> {
+    const query = `
+      SELECT
+        COUNT(DISTINCT r.id)::int AS reviews_count,
+        COALESCE(SUM(CASE WHEN rv.value = 1 THEN 1 ELSE 0 END), 0)::int AS upvotes,
+        COALESCE(SUM(CASE WHEN rv.value = -1 THEN 1 ELSE 0 END), 0)::int AS downvotes
+      FROM users u
+      LEFT JOIN reviews r ON r.user_id = u.id
+      LEFT JOIN review_votes rv ON rv.review_id = r.id
+      WHERE u.id = $1
+    `;
+
+    const { rows } = await this.db.query(query, [userId]);
+    const row = rows[0] ?? {
+      reviews_count: 0,
+      upvotes: 0,
+      downvotes: 0,
+    };
+
+    return {
+      reviewsCount: Number(row.reviews_count ?? 0),
+      upvotes: Number(row.upvotes ?? 0),
+      downvotes: Number(row.downvotes ?? 0),
+    };
   }
 }

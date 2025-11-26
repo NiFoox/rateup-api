@@ -1,4 +1,5 @@
 import { Game } from './game.entity.js';
+import type { TopGameDTO } from './dto/top-game.dto.js';
 
 export interface GameRepository {
   // Create
@@ -14,6 +15,11 @@ export interface GameRepository {
     opts?: { search?: string; genre?: string },
   ): Promise<Game[]>;
   getAll(): Promise<Game[]>;
+
+  getTopRatedGames(
+    limit: number,
+    minReviews?: number,
+  ): Promise<TopGameDTO[]>;
 
   // Update
   patch(id: number, game: Partial<Game>): Promise<Game | undefined>;

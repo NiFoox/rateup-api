@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import { Game } from './game.entity.js';
 import { GameRepository } from './game.repository.interface.js';
+import type { TopGameDTO } from './dto/top-game.dto.js';
 
 export class GamePostgresRepository implements GameRepository {
   constructor(private readonly db: Pool) {
@@ -65,6 +66,36 @@ export class GamePostgresRepository implements GameRepository {
   async getAll(): Promise<Game[]> {
     const { rows } = await this.db.query<Game>('SELECT * FROM games ORDER BY id');
     return rows;
+  }
+
+  async getTopRatedGames(
+    limit: number,
+    minReviews: number = 1,
+  ): Promise<TopGameDTO[]> {
+    const query = `
+      SELECT
+        g.id,
+        g.name,
+        g.genre,
+        COUNT(r.id)               AS review_count,
+        COALESCE(AVG(r.score), 0) AS avg_score
+      FROM games g
+      LEFT JOIN reviews r ON r.game_id = g.id
+      GROUP BY g.id, g.name, g.genre
+      HAVING COUNT(r.id) >= $1
+      ORDER BY avg_score DESC, review_count DESC, g.name ASC
+      LIMIT $2
+    `;
+
+    const { rows } = await this.db.query(query, [minReviews, limit]);
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      genre: row.genre,
+      avgScore: Number(row.avg_score),
+      reviewCount: Number(row.review_count),
+    }));
   }
 
   // Update

@@ -1,5 +1,10 @@
 import { Router } from 'express';
-import { validateBody, validateParams, validateQuery } from '../shared/middlewares/validate.js';
+import {
+  validateBody,
+  validateParams,
+  validateQuery,
+} from '../shared/middlewares/validate.js';
+import { requireAuth, requireRole } from '../shared/middlewares/auth.js';
 import {
   GameCreateSchema,
   GameUpdateSchema,
@@ -13,26 +18,47 @@ export default function buildGameRouter(repo: GameRepository) {
   const gameRouter = Router();
   const controller = new GameController(repo);
 
-  //Create
-  gameRouter.post('/', validateBody(GameCreateSchema), controller.create.bind(controller));
+  // Create (solo ADMIN)
+  gameRouter.post(
+    '/',
+    requireAuth,
+    requireRole('ADMIN'),
+    validateBody(GameCreateSchema),
+    controller.create.bind(controller),
+  );
 
-  //Read
-  // !!! el profe dijo q se usa mas algo como routes, se referira a hacer algo como composition routes? o flashie composition root
+  // Read (by id) - público
+  gameRouter.get(
+    '/:id',
+    validateParams(GameIdParamSchema),
+    controller.getById.bind(controller),
+  );
 
-  gameRouter.get('/:id', validateParams(GameIdParamSchema), controller.getById.bind(controller));
+  // List (paginado / filtros) - público
+  gameRouter.get(
+    '/',
+    validateQuery(GameListQuerySchema),
+    controller.list.bind(controller),
+  );
 
-  gameRouter.get('/', validateQuery(GameListQuerySchema), controller.list.bind(controller));
-
-  //Update
+  // Update (PATCH) - solo ADMIN
   gameRouter.patch(
     '/:id',
+    requireAuth,
+    requireRole('ADMIN'),
     validateParams(GameIdParamSchema),
     validateBody(GameUpdateSchema),
     controller.patch.bind(controller),
   );
 
-  //Delete
-  gameRouter.delete('/:id', validateParams(GameIdParamSchema), controller.delete.bind(controller));
+  // Delete - solo ADMIN
+  gameRouter.delete(
+    '/:id',
+    requireAuth,
+    requireRole('ADMIN'),
+    validateParams(GameIdParamSchema),
+    controller.delete.bind(controller),
+  );
 
   return gameRouter;
 }

@@ -1,9 +1,11 @@
 export class Review {
   constructor(
-    public gameTitle: string,
+    public gameId: number,
+    public userId: number,
     public content: string,
     public score: number,
-    public author: string,
     public id?: number,
+    public createdAt?: Date,
+    public updatedAt?: Date,
   ) {}
 }

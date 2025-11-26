@@ -1,0 +1,5 @@
+### Top games (mejores juegos para el home)
+GET http://localhost:3000/api/home/top-games?limit=5&minReviews=3
+
+### Reseñas trending (más votadas/recientes para el home)
+GET http://localhost:3000/api/home/trending-reviews?limit=5&days=7
