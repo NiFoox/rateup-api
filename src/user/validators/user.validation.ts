@@ -1,5 +1,6 @@
 // src/user/validators/user.validation.ts
 import { z } from 'zod';
+import { is } from 'zod/locales';
 
 // helper: "" -> undefined para default/optional
 const emptyToUndef = (rawValue: unknown) =>
@@ -13,6 +14,8 @@ const UserBaseSchema = z
     username: z.string().trim().min(1, 'username is required'),
     email: z.string().trim().pipe(z.email({ message: 'invalid email' })),
     password: z.string().min(8, 'password must be at least 8 characters'),
+    roles: z.array(UserRoleSchema).min(1, 'roles must have at least one role'),
+    isActive: z.boolean().default(true),
   })
   .strict();
 
