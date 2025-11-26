@@ -1,29 +1,25 @@
-### Upvote (value = 1) una review
-PUT http://localhost:3000/api/reviews/1/votes
-Content-Type: application/json
-
-{
-  "userId": 1,
-  "value": 1
-}
-
-### Downvote (value = -1) la misma review
-PUT http://localhost:3000/api/reviews/1/votes
-Content-Type: application/json
-
-{
-  "userId": 1,
-  "value": -1
-}
-
-### Quitar el voto de ese user
-DELETE http://localhost:3000/api/reviews/1/votes
-Content-Type: application/json
-
-{
-  "userId": 1
-}
-
 ### Ver resumen de votos de la review
 GET http://localhost:3000/api/reviews/1/votes
 Content-Type: application/json
+
+### Upvote (value = 1) una review (requiere usuario logueado)
+PUT http://localhost:3000/api/reviews/1/votes
+Content-Type: application/json
+Authorization: Bearer PASTE_JWT_TOKEN_HERE
+
+{
+  "value": 1
+}
+
+### Downvote (value = -1) la misma review (requiere usuario logueado)
+PUT http://localhost:3000/api/reviews/1/votes
+Content-Type: application/json
+Authorization: Bearer PASTE_JWT_TOKEN_HERE
+
+{
+  "value": -1
+}
+
+### Quitar mi voto a esa review (requiere usuario logueado)
+DELETE http://localhost:3000/api/reviews/1/votes
+Authorization: Bearer PASTE_JWT_TOKEN_HERE

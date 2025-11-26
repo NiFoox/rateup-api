@@ -1,3 +1,4 @@
+// src/review-vote/review-vote.routes.ts
 import { Router } from 'express';
 import {
   validateBody,
@@ -8,14 +9,12 @@ import { ReviewVoteController } from './review-vote.controller.js';
 import {
   ReviewVoteParamsSchema,
   ReviewVoteBodySchema,
-  ReviewVoteDeleteBodySchema,
 } from './validators/review-vote.validation.js';
 import type { ReviewVoteRepository } from './review-vote.repository.interface.js';
 
 export default function buildReviewVoteRouter(
   repository: ReviewVoteRepository,
 ) {
-  // mergeParams: true para acceder a :reviewId del prefijo
   const router = Router({ mergeParams: true });
   const controller = new ReviewVoteController(repository);
 
@@ -37,13 +36,12 @@ export default function buildReviewVoteRouter(
     controller.upsert.bind(controller),
   );
 
-  // DELETE quitar voto (requiere login)
+  // DELETE quitar voto (requiere login, sin body)
   // DELETE /api/reviews/:reviewId/votes
   router.delete(
     '/',
     requireAuth,
     validateParams(ReviewVoteParamsSchema),
-    validateBody(ReviewVoteDeleteBodySchema),
     controller.remove.bind(controller),
   );
 

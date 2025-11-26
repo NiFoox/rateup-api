@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import type { AuthenticatedRequest } from '../shared/middlewares/auth.js';
 import type { ReviewCommentRepository } from './review-comment.repository.interface.js';
 import { ReviewComment } from './review-comment.entity.js';
 import {
@@ -29,7 +30,17 @@ export class ReviewCommentController {
         ReviewCommentCreateSchema.parse(req.body);
 
       const { reviewId } = params;
-      const { userId, content } = body;
+      const { content } = body;
+
+      const authReq = req as AuthenticatedRequest;
+      const authUser = authReq.user;
+
+      if (!authUser) {
+        res.status(401).json({ message: 'Not authenticated' });
+        return;
+      }
+
+      const userId = Number(authUser.sub);
 
       const comment = new ReviewComment(reviewId, userId, content);
       const created = await this.repository.create(comment);
@@ -82,17 +93,15 @@ export class ReviewCommentController {
         ReviewCommentListQuerySchema.parse(req.query);
 
       const { reviewId } = params;
-
-      const page = query.page ?? 1;
-      const pageSize = query.pageSize ?? 20;
+      const { page, pageSize } = query;
 
       const offset = (page - 1) * pageSize;
-      const limit = pageSize;
 
+      // 👇 acá va el método REAL que existe en tu repo
       const comments = await this.repository.getByReviewWithUser(
         reviewId,
         offset,
-        limit,
+        pageSize,
       );
 
       res.json({
@@ -113,7 +122,7 @@ export class ReviewCommentController {
       res.status(500).json({ message: 'Internal server error' });
     }
   }
-  
+
   // PATCH /api/reviews/:reviewId/comments/:commentId
   async patch(req: Request, res: Response): Promise<void> {
     try {
@@ -127,11 +136,28 @@ export class ReviewCommentController {
 
       const { reviewId, commentId } = params;
 
-      // Busca el comment actual (podría saltear esto y hacer update directo,
-      // pero así chequea existencia primero)
+      const authReq = req as AuthenticatedRequest;
+      const authUser = authReq.user;
+
+      if (!authUser) {
+        res.status(401).json({ message: 'Not authenticated' });
+        return;
+      }
+
       const existing = await this.repository.findById(commentId);
       if (!existing || existing.reviewId !== reviewId) {
         res.status(404).json({ message: 'Comment not found' });
+        return;
+      }
+
+      const currentUserId = Number(authUser.sub);
+      const isOwner = existing.userId === currentUserId;
+      const isAdmin = authUser.roles?.includes('ADMIN') ?? false;
+
+      if (!isOwner && !isAdmin) {
+        res
+          .status(403)
+          .json({ message: 'Not authorized to modify this comment' });
         return;
       }
 
@@ -161,6 +187,31 @@ export class ReviewCommentController {
       ReviewCommentWithIdParamsSchema.parse(req.params);
 
     const { reviewId, commentId } = params;
+
+    const authReq = req as AuthenticatedRequest;
+    const authUser = authReq.user;
+
+    if (!authUser) {
+      res.status(401).json({ message: 'Not authenticated' });
+      return;
+    }
+
+    const existing = await this.repository.findById(commentId);
+    if (!existing || existing.reviewId !== reviewId) {
+      res.status(404).json({ message: 'Comment not found' });
+      return;
+    }
+
+    const currentUserId = Number(authUser.sub);
+    const isOwner = existing.userId === currentUserId;
+    const isAdmin = authUser.roles?.includes('ADMIN') ?? false;
+
+    if (!isOwner && !isAdmin) {
+      res
+        .status(403)
+        .json({ message: 'Not authorized to delete this comment' });
+      return;
+    }
 
     const deleted = await this.repository.delete(commentId, reviewId);
 

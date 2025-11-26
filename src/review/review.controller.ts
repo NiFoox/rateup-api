@@ -1,8 +1,8 @@
-// src/review/review.controller.ts
 import { Request, Response } from 'express';
 import type { ReviewRepository } from './review.repository.interface.js';
 import type { ReviewCommentRepository } from '../review-comment/review-comment.repository.interface.js';
 import type { ReviewVoteRepository } from '../review-vote/review-vote.repository.interface.js';
+import type { AuthenticatedRequest } from '../shared/middlewares/auth.js';
 import { Review } from './review.entity.js';
 import {
   ReviewCreateSchema,
@@ -29,7 +29,17 @@ export class ReviewController {
         (res.locals?.validated?.body as ReviewCreateDTO) ??
         ReviewCreateSchema.parse(req.body);
 
-      const { gameId, userId, content, score } = body;
+      const { gameId, content, score } = body;
+
+      const authReq = req as AuthenticatedRequest;
+      const authUser = authReq.user;
+
+      if (!authUser) {
+        res.status(401).json({ message: 'No autenticado' });
+        return;
+      }
+
+      const userId = Number(authUser.sub);
 
       const review = new Review(gameId, userId, content, score);
       const createdReview = await this.repository.create(review);
@@ -37,7 +47,9 @@ export class ReviewController {
       res.status(201).json(createdReview);
     } catch (error) {
       if (error instanceof Error && (error as any).name === 'ZodError') {
-        res.status(400).json({ message: 'Datos inválidos', details: (error as any).errors });
+        res
+          .status(400)
+          .json({ message: 'Datos inválidos', details: (error as any).errors });
         return;
       }
       res.status(500).json({ message: 'Error interno del servidor', error });
@@ -77,6 +89,34 @@ export class ReviewController {
     res.json({ page, pageSize, data: reviews });
   }
 
+  // GET /reviews/me
+  // Lista las reseñas del usuario logueado usando sub (JWT)
+  async listMine(req: Request, res: Response): Promise<void> {
+    const authReq = req as AuthenticatedRequest;
+    const authUser = authReq.user;
+
+    if (!authUser) {
+      res.status(401).json({ message: 'No autenticado' });
+      return;
+    }
+
+    const query: ReviewListQueryDTO =
+      (res.locals?.validated?.query as ReviewListQueryDTO) ??
+      ReviewListQuerySchema.parse(req.query);
+
+    const { page, pageSize, gameId } = query;
+    const offset = (page - 1) * pageSize;
+
+    const userId = Number(authUser.sub);
+
+    const reviews = await this.repository.getPaginated(offset, pageSize, {
+      gameId,
+      userId,
+    });
+
+    res.json({ page, pageSize, data: reviews });
+  }
+
   // GET /reviews/:id/details
   async getWithRelations(req: Request, res: Response): Promise<void> {
     const params: ReviewIdParamDTO =
@@ -96,15 +136,12 @@ export class ReviewController {
   // GET /api/reviews/:id/full
   async getFull(req: Request, res: Response): Promise<void> {
     try {
-      // 1) ID de la review (usamos el mismo schema que getById)
       const params: ReviewIdParamDTO =
         (res.locals?.validated?.params as ReviewIdParamDTO) ??
         ReviewIdParamSchema.parse(req.params);
 
       const reviewId = params.id;
 
-      // 2) Paginación de comentarios (simple)
-      // /api/reviews/:id/full?commentsPage=1&commentsPageSize=10
       const rawCommentsPage = req.query.commentsPage;
       const rawCommentsPageSize = req.query.commentsPageSize;
 
@@ -129,7 +166,6 @@ export class ReviewController {
       const offset = (commentsPage - 1) * commentsPageSize;
       const limit = commentsPageSize;
 
-      // 3) Review + user + game
       const review = await this.repository.findByIdWithRelations(reviewId);
 
       if (!review) {
@@ -137,28 +173,24 @@ export class ReviewController {
         return;
       }
 
-      // 4) Comentarios con usuario
-      const comments =
-        await this.commentRepository.getByReviewWithUser(
-          reviewId,
-          offset,
-          limit,
-        );
+      const comments = await this.commentRepository.getByReviewWithUser(
+        reviewId,
+        offset,
+        limit,
+      );
 
-      // 5) Resumen de votos
       const votesSummary = await this.voteRepository.getSummary(reviewId);
 
-      // 6) Respuesta "full" para el front
       res.json({
         reviewId,
-        review, // { id, content, score, createdAt, user:{...}, game:{...} }
+        review,
         comments: {
           page: commentsPage,
           pageSize: commentsPageSize,
           count: comments.length,
           items: comments,
         },
-        votes: votesSummary, // { upvotes, downvotes, score }
+        votes: votesSummary,
       });
     } catch (error) {
       if ((error as any)?.name === 'ZodError') {
@@ -184,6 +216,32 @@ export class ReviewController {
         (res.locals?.validated?.body as ReviewUpdateDTO) ??
         ReviewUpdateSchema.parse(req.body);
 
+      const authReq = req as AuthenticatedRequest;
+      const authUser = authReq.user;
+
+      if (!authUser) {
+        res.status(401).json({ message: 'No autenticado' });
+        return;
+      }
+
+      const existing = await this.repository.findById(params.id);
+
+      if (!existing) {
+        res.status(404).json({ message: 'Reseña no encontrada' });
+        return;
+      }
+
+      const currentUserId = Number(authUser.sub);
+      const isOwner = existing.userId === currentUserId;
+      const isAdmin = authUser.roles?.includes('ADMIN') ?? false;
+
+      if (!isOwner && !isAdmin) {
+        res.status(403).json({
+          message: 'No autorizado para modificar esta reseña',
+        });
+        return;
+      }
+
       const patched = await this.repository.update(params.id, body);
 
       if (!patched) {
@@ -194,7 +252,9 @@ export class ReviewController {
       res.json(patched);
     } catch (error) {
       if (error instanceof Error && (error as any).name === 'ZodError') {
-        res.status(400).json({ message: 'Datos inválidos', details: (error as any).errors });
+        res
+          .status(400)
+          .json({ message: 'Datos inválidos', details: (error as any).errors });
         return;
       }
       res.status(500).json({ message: 'Error interno del servidor', error });
@@ -206,6 +266,32 @@ export class ReviewController {
     const params: ReviewIdParamDTO =
       (res.locals?.validated?.params as ReviewIdParamDTO) ??
       ReviewIdParamSchema.parse(req.params);
+
+    const authReq = req as AuthenticatedRequest;
+    const authUser = authReq.user;
+
+    if (!authUser) {
+      res.status(401).json({ message: 'No autenticado' });
+      return;
+    }
+
+    const existing = await this.repository.findById(params.id);
+
+    if (!existing) {
+      res.status(404).json({ message: 'Reseña no encontrada' });
+      return;
+    }
+
+    const currentUserId = Number(authUser.sub);
+    const isOwner = existing.userId === currentUserId;
+    const isAdmin = authUser.roles?.includes('ADMIN') ?? false;
+
+    if (!isOwner && !isAdmin) {
+      res.status(403).json({
+        message: 'No autorizado para eliminar esta reseña',
+      });
+      return;
+    }
 
     const deleted = await this.repository.delete(params.id);
 

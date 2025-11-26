@@ -1,3 +1,5 @@
+import cors from 'cors';
+import 'dotenv/config';
 import express from 'express';
 import helmet from 'helmet';
 import buildGameRouter from './game/game.routes.js';
@@ -10,6 +12,17 @@ import buildHomeRouter from './home/home.routes.js';
 import { container } from './shared/container.js';
 
 const app = express();
+
+app.use(
+  cors({
+    origin: '*', // Para producción poner dominio real
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+    credentials: false,
+  }),
+);
+
 app.use(express.json({ limit: '100kb' }));
 app.use(helmet());
 
@@ -34,7 +47,10 @@ app.use(
 );
 
 app.use('/api/users', buildUserRouter(container.userService));
-app.use('/api/auth', buildAuthRouter(container.authService));
+app.use('/api/auth', buildAuthRouter(
+  container.authService,
+  container.userService,
+));
 
 app.use(
   '/api/home',
@@ -46,14 +62,11 @@ app.use(
 
 export default app;
 
-// Usar los types en todos los parámetros de los métodos?
-// Probar llamar una api externa, con axios, got, etc. Microservicio a microservicio
-// Falta hacer service?
-// Falta jest
-// Falta .env y config.
-// Falta mejorar dockercompose, para levantar api también
-// Falta manejo de errores?
-// Falta exponer endpoints de healthcheck, métricas, etc.
-
 // TODO:
 // - Refactor dto (matar validators y meter todo en dto por separado)
+// - Usar ORM tipo TypeORM o Prisma?
+// - Middleware de error handling global?
+// - Usar más los types en vez de tanto any?
+// - Más tests
+// - Levantar api en docker?
+// - Probar llamar api externa?

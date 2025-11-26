@@ -22,7 +22,6 @@ export const ReviewCommentWithIdParamsSchema =
 // Crear comentario
 export const ReviewCommentCreateSchema = z
   .object({
-    userId: z.coerce.number().int().positive(),
     content: z.string().trim().min(1, 'content is required'),
   })
   .strict();
@@ -43,7 +42,7 @@ export const ReviewCommentListQuerySchema = z.object({
   ),
   pageSize: z.preprocess(
     emptyToUndef,
-    z.coerce.number().int().min(1).max(100).default(10),
+    z.coerce.number().int().min(1).default(10),
   ),
 });
 

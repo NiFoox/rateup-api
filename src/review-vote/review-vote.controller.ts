@@ -1,12 +1,12 @@
+// src/review-vote/review-vote.controller.ts
 import { Request, Response } from 'express';
+import type { AuthenticatedRequest } from '../shared/middlewares/auth.js';
 import type { ReviewVoteRepository } from './review-vote.repository.interface.js';
 import {
   ReviewVoteParamsSchema,
   ReviewVoteBodySchema,
-  ReviewVoteDeleteBodySchema,
   type ReviewVoteParamsDTO,
   type ReviewVoteBodyDTO,
-  type ReviewVoteDeleteBodyDTO,
 } from './validators/review-vote.validation.js';
 
 export class ReviewVoteController {
@@ -40,14 +40,24 @@ export class ReviewVoteController {
         ReviewVoteBodySchema.parse(req.body);
 
       const { reviewId } = params;
-      const { userId, value } = body;
+      const { value } = body;
+
+      const authReq = req as AuthenticatedRequest;
+      const authUser = authReq.user;
+
+      if (!authUser) {
+        res.status(401).json({ message: 'Not authenticated' });
+        return;
+      }
+
+      const userId = Number(authUser.sub);
 
       const vote = await this.repository.upsertVote(reviewId, userId, value);
       const summary = await this.repository.getSummary(reviewId);
 
       res.status(200).json({
         reviewId,
-        userId: vote.userId,
+        userId,
         value: vote.value,
         ...summary,
       });
@@ -69,29 +79,24 @@ export class ReviewVoteController {
         (res.locals?.validated?.params as ReviewVoteParamsDTO) ??
         ReviewVoteParamsSchema.parse(req.params);
 
-      const body: ReviewVoteDeleteBodyDTO =
-        (res.locals?.validated?.body as ReviewVoteDeleteBodyDTO) ??
-        ReviewVoteDeleteBodySchema.parse(req.body);
-
       const { reviewId } = params;
-      const { userId } = body;
 
-      const deleted = await this.repository.deleteVote(reviewId, userId);
+      const authReq = req as AuthenticatedRequest;
+      const authUser = authReq.user;
 
-      const summary = await this.repository.getSummary(reviewId);
-
-      if (!deleted) {
-        // no había voto, pero igual devolvemos summary actual
-        res.status(404).json({
-          message: 'Vote not found for this user/review',
-          reviewId,
-          ...summary,
-        });
+      if (!authUser) {
+        res.status(401).json({ message: 'Not authenticated' });
         return;
       }
 
+      const userId = Number(authUser.sub);
+
+      const deleted = await this.repository.deleteVote(reviewId, userId);
+      const summary = await this.repository.getSummary(reviewId);
+
       res.status(200).json({
         reviewId,
+        deleted,
         ...summary,
       });
     } catch (error) {

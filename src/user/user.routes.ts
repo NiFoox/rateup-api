@@ -10,42 +10,77 @@ import {
   UserUpdateSchema,
   UserIdParamSchema,
   UserListQuerySchema,
+  UserRolesUpdateSchema,
 } from './validators/user.validation.js';
 import { UserController } from './user.controller.js';
 import type { UserService } from './user.service.js';
+import {
+  requireAuth,
+  requireRole,
+} from '../shared/middlewares/auth.js';
 
 export default function buildUserRouter(userService: UserService) {
   const router = Router();
   const controller = new UserController(userService);
 
-  // POST /api/users
-  router.post('/', validateBody(UserCreateSchema), controller.create.bind(controller));
+  // Perfil público
+  router.get(
+    '/profile/:id',
+    validateParams(UserIdParamSchema),
+    controller.getProfileById.bind(controller),
+  );
 
-  // GET /api/users?page=&pageSize=&search=
+  // Crear usuario (ADMIN)
+  router.post(
+    '/',
+    requireAuth,
+    requireRole('ADMIN'),
+    validateBody(UserCreateSchema),
+    controller.create.bind(controller),
+  );
+
+  // Listar usuarios (ADMIN)
   router.get(
     '/',
+    requireAuth,
+    requireRole('ADMIN'),
     validateQuery(UserListQuerySchema),
     controller.list.bind(controller),
   );
 
-  // GET /api/users/:id
+  // Ver usuario (ADMIN)
   router.get(
     '/:id',
+    requireAuth,
+    requireRole('ADMIN'),
     validateParams(UserIdParamSchema),
     controller.getById.bind(controller),
   );
 
-  // PATCH /api/users/:id
+  // Actualizar roles de usuario (solo ADMIN)
+  router.patch(
+    '/:id/roles',
+    requireAuth,
+    requireRole('ADMIN'),
+    validateParams(UserIdParamSchema),
+    validateBody(UserRolesUpdateSchema),
+    controller.updateRoles.bind(controller),
+  );
+
+  // Actualizar usuario (dueño o ADMIN)
   router.patch(
     '/:id',
+    requireAuth,
     validateParams(UserIdParamSchema),
     validateBody(UserUpdateSchema),
     controller.update.bind(controller),
   );
 
-  // DELETE /api/users/:id
+  // Eliminar usuario (ADMIN)
   router.delete(
     '/:id',
+    requireAuth,
+    requireRole('ADMIN'),
     validateParams(UserIdParamSchema),
     controller.delete.bind(controller),
   );

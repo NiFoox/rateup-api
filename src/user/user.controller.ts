@@ -5,16 +5,19 @@ import {
   UserUpdateSchema,
   UserIdParamSchema,
   UserListQuerySchema,
+  UserRolesUpdateSchema,
   type UserCreateDTO,
   type UserUpdateDTO,
   type UserIdParamDTO,
   type UserListQueryDTO,
+  type UserRolesUpdateDTO,
 } from './validators/user.validation.js';
+import type { AuthenticatedRequest } from '../shared/middlewares/auth.js';
 
 export class UserController {
   constructor(private readonly service: UserService) {}
 
-  // POST /api/users
+  // POST /api/users (ADMIN crea usuarios)
   async create(req: Request, res: Response) {
     const body: UserCreateDTO =
       (res.locals?.validated?.body as UserCreateDTO) ??
@@ -29,12 +32,11 @@ export class UserController {
           .status(409)
           .json({ error: 'El nombre de usuario o email ya existen' });
       }
-
       return res.status(500).json({ error: 'Error al crear usuario' });
     }
   }
 
-  // GET /api/users
+  // GET /api/users (ADMIN)
   async list(req: Request, res: Response) {
     const query: UserListQueryDTO =
       (res.locals?.validated?.query as UserListQueryDTO) ??
@@ -44,7 +46,7 @@ export class UserController {
     return res.json(result);
   }
 
-  // GET /api/users/:id
+  // GET /api/users/:id (ADMIN)
   async getById(req: Request, res: Response) {
     const params: UserIdParamDTO =
       (res.locals?.validated?.params as UserIdParamDTO) ??
@@ -59,7 +61,22 @@ export class UserController {
     return res.json(user);
   }
 
-  // PATCH /api/users/:id
+  // GET /api/users/profile/:id -> perfil público
+  async getProfileById(req: Request, res: Response) {
+    const params: UserIdParamDTO =
+      (res.locals?.validated?.params as UserIdParamDTO) ??
+      UserIdParamSchema.parse(req.params);
+
+    const profile = await this.service.getPublicProfile(params.id);
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    return res.json(profile);
+  }
+
+  // PATCH /api/users/:id (dueño o ADMIN)
   async update(req: Request, res: Response) {
     const params: UserIdParamDTO =
       (res.locals?.validated?.params as UserIdParamDTO) ??
@@ -68,6 +85,29 @@ export class UserController {
     const body: UserUpdateDTO =
       (res.locals?.validated?.body as UserUpdateDTO) ??
       UserUpdateSchema.parse(req.body);
+
+    const authReq = req as AuthenticatedRequest;
+    const authUser = authReq.user;
+
+    if (!authUser) {
+      return res.status(401).json({ error: 'No autenticado' });
+    }
+
+    const currentUserId = Number(authUser.sub);
+    const isOwner = currentUserId === params.id;
+    const isAdmin = authUser.roles?.includes('ADMIN') ?? false;
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        error: 'No estás autorizado para modificar este usuario',
+      });
+    }
+
+    if (!isAdmin && (body as any).roles !== undefined) {
+      return res.status(403).json({
+        error: 'No estás autorizado para modificar roles',
+      });
+    }
 
     const updated = await this.service.update(params.id, body);
 
@@ -78,7 +118,41 @@ export class UserController {
     return res.json(updated);
   }
 
-  // DELETE /api/users/:id
+  // PATCH /api/users/:id/roles (solo ADMIN)
+  async updateRoles(req: Request, res: Response) {
+    const params: UserIdParamDTO =
+      (res.locals?.validated?.params as UserIdParamDTO) ??
+      UserIdParamSchema.parse(req.params);
+
+    const body: UserRolesUpdateDTO =
+      (res.locals?.validated?.body as UserRolesUpdateDTO) ??
+      UserRolesUpdateSchema.parse(req.body);
+
+    const authReq = req as AuthenticatedRequest;
+    const authUser = authReq.user;
+
+    if (!authUser) {
+      return res.status(401).json({ error: 'No autenticado' });
+    }
+
+    const isAdmin = authUser.roles?.includes('ADMIN') ?? false;
+
+    if (!isAdmin) {
+      return res.status(403).json({
+        error: 'Solo un administrador puede modificar roles',
+      });
+    }
+
+    const updated = await this.service.updateRoles(params.id, body.roles);
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    return res.json(updated);
+  }
+
+  // DELETE /api/users/:id (ADMIN)
   async delete(req: Request, res: Response) {
     const params: UserIdParamDTO =
       (res.locals?.validated?.params as UserIdParamDTO) ??

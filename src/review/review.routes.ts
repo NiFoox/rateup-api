@@ -28,7 +28,15 @@ export default function buildReviewRouter(
     reviewVoteRepository,
   );
 
-  // Create review (requiere login)
+  // Mis reseñas (usuario logueado) -> IMPORTANTE: antes de '/:id'
+  router.get(
+    '/me',
+    requireAuth,
+    validateQuery(ReviewListQuerySchema),
+    controller.listMine.bind(controller),
+  );
+
+  // Crear reseña (requiere login)
   router.post(
     '/',
     requireAuth,
@@ -36,35 +44,35 @@ export default function buildReviewRouter(
     controller.create.bind(controller),
   );
 
-  // Get by id - público
+  // Obtener reseña por id - público
   router.get(
     '/:id',
     validateParams(ReviewIdParamSchema),
     controller.getById.bind(controller),
   );
 
-  // List - público
+  // Listar reseñas - público, con filtros opcionales
   router.get(
     '/',
     validateQuery(ReviewListQuerySchema),
     controller.list.bind(controller),
   );
 
-  // Details - público
+  // Obtener reseña con relaciones básicas
   router.get(
     '/:id/details',
     validateParams(ReviewIdParamSchema),
     controller.getWithRelations.bind(controller),
   );
 
-  // Full (review + user + game + comments + votes) - público
+  // Obtener reseña completa
   router.get(
     '/:id/full',
     validateParams(ReviewIdParamSchema),
     controller.getFull.bind(controller),
   );
 
-  // Patch review (requiere login)
+  // Actualizar reseña (dueño o ADMIN)
   router.patch(
     '/:id',
     requireAuth,
@@ -73,7 +81,7 @@ export default function buildReviewRouter(
     controller.patch.bind(controller),
   );
 
-  // Delete review (requiere login)
+  // Eliminar reseña (dueño o ADMIN)
   router.delete(
     '/:id',
     requireAuth,

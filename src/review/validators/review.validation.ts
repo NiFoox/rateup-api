@@ -9,7 +9,6 @@ const emptyToUndef = (rawValue: unknown) =>
 const ReviewBaseSchema = z
   .object({
     gameId: z.coerce.number().int().positive(),
-    userId: z.coerce.number().int().positive(),
     content: z.string().trim().min(1),
     score: z.coerce.number().int().min(1).max(5),
   })
