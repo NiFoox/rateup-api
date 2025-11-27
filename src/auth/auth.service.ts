@@ -1,4 +1,3 @@
-// src/auth/auth.service.ts
 import jwt, { type SignOptions, type Secret } from 'jsonwebtoken';
 import { verifyPassword } from '../common/password.util.js';
 import type { UserRepository } from '../user/user.repository.interface.js';

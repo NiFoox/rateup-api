@@ -1,4 +1,3 @@
-// src/review-vote/validators/review-vote.validation.ts
 import { z } from 'zod';
 
 // /api/reviews/:reviewId/votes

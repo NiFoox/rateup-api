@@ -1,4 +1,3 @@
-// src/review-vote/review-vote.controller.ts
 import { Request, Response } from 'express';
 import type { AuthenticatedRequest } from '../shared/middlewares/auth.js';
 import type { ReviewVoteRepository } from './review-vote.repository.interface.js';

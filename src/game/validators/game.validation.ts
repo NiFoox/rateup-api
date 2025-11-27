@@ -1,4 +1,3 @@
-// src/game/validators/game.validation.ts
 import { z } from 'zod';
 
 // helper: "" -> undefined para que funcionen bien los default/optional
