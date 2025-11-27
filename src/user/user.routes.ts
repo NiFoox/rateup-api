@@ -1,4 +1,3 @@
-// src/user/user.routes.ts
 import { Router } from 'express';
 import {
   validateBody,

@@ -1,4 +1,3 @@
-// src/review-comment/review-comment.postgres.repository.ts
 import { Pool } from 'pg';
 import { ReviewComment } from './review-comment.entity.js';
 import type { ReviewCommentRepository } from './review-comment.repository.interface.js';

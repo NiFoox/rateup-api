@@ -1,4 +1,3 @@
-// src/user/user.service.ts
 import { User, type UserRole } from './user.entity.js';
 import type {
   UserRepository,

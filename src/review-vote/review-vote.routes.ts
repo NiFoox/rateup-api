@@ -1,4 +1,3 @@
-// src/review-vote/review-vote.routes.ts
 import { Router } from 'express';
 import {
   validateBody,
