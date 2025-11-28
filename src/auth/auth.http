@@ -8,7 +8,7 @@ Content-Type: application/json
   "username": "nuevo",
   "email": "nuevo@example.com",
   "password": "password123",
-  "roles": ["USER"],
+  "roles": ["USER", "ADMIN"],
   "isActive": true
 }
 
