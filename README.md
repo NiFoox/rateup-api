@@ -583,7 +583,15 @@ Detalle completo: review, comments, votes.
 ```json
 {
   "reviewId": 1,
-  "review": ReviewWithRelationsDTO,
+  "review": {
+    "id": 1,
+    "content": "string",
+    "score": 4,
+    "createdAt": "string",
+    "updatedAt": "string",
+    "user": { "id": 2, "username": "string", "email": "string" },
+    "game": { "id": 7, "name": "string", "genre": "string" }
+  },
   "comments": {
     "page": 1,
     "pageSize": 10,
@@ -591,6 +599,7 @@ Detalle completo: review, comments, votes.
     "items": [ ReviewCommentWithUserDTO ]
   },
   "votes": {
+    "reviewId": 1,
     "upvotes": 10,
     "downvotes": 2,
     "score": 8
@@ -686,6 +695,7 @@ Lista de comentarios sin datos de usuario.
 
 ```json
 {
+  "reviewId": 1,
   "page": 1,
   "pageSize": 10,
   "data": [ ReviewComment ]
@@ -707,9 +717,11 @@ Lista de comentarios con datos de usuario.
 
 ```json
 {
+  "reviewId": 1,
   "page": 1,
   "pageSize": 10,
-  "data": [ ReviewCommentWithUserDTO ]
+  "count": 2,
+  "items": [ ReviewCommentWithUserDTO ]
 }
 ```
 
@@ -757,7 +769,7 @@ Elimina un comentario.
 
 Obtiene el resumen de votos.
 
-**Response 200:** Vote Summary DTO
+**Response 200:** Vote Summary DTO (incluye `reviewId` en la raíz)
 
 ---
 
@@ -773,14 +785,35 @@ Crea o actualiza un voto.
 }
 ```
 
-**Response 200:** Vote Summary DTO actualizado
+**Response 200:**
+
+```json
+{
+  "reviewId": 1,
+  "userId": 5,
+  "value": 1,
+  "upvotes": 10,
+  "downvotes": 2,
+  "score": 8
+}
+```
 
 ---
 
 ## DELETE `/reviews/:reviewId/votes` (login requerido)
 
 Elimina el voto del usuario.
-**Response 204** sin cuerpo.
+**Response 200:**
+
+```json
+{
+  "reviewId": 1,
+  "deleted": true,
+  "upvotes": 9,
+  "downvotes": 1,
+  "score": 8
+}
+```
 
 ---
 
