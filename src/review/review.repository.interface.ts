@@ -11,7 +11,7 @@ export interface ReviewRepository {
     offset: number,
     limit: number,
     opts?: { gameId?: number; userId?: number },
-  ): Promise<Review[]>;
+  ): Promise<{ data: Review[]; total: number }>;
 
   findByIdWithRelations(id: number): Promise<ReviewWithRelationsDTO | null>;
 

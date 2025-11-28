@@ -40,7 +40,7 @@ export class ReviewPostgresRepository implements ReviewRepository {
     offset: number,
     limit: number,
     opts?: { gameId?: number; userId?: number },
-  ): Promise<Review[]> {
+  ): Promise<{ data: Review[]; total: number }> {
     const where: string[] = [];
     const values: any[] = [];
 
@@ -56,17 +56,26 @@ export class ReviewPostgresRepository implements ReviewRepository {
 
     const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
-    values.push(limit, offset);
-    const { rows } = await this.db.query(
-      `SELECT * FROM reviews
-       ${whereClause}
-       ORDER BY id
-       LIMIT $${values.length - 1}
-       OFFSET $${values.length}`,
-      values,
-    );
+    const countQuery = `SELECT COUNT(*)::int AS count FROM reviews ${whereClause}`;
+    const countResult = await this.db.query(countQuery, values);
+    const total = Number(countResult.rows[0]?.count ?? 0);
 
-    return rows.map(mapRowToReview);
+    const dataQuery = `
+      SELECT *
+      FROM reviews
+      ${whereClause}
+      ORDER BY id
+      LIMIT $${values.length + 1}
+      OFFSET $${values.length + 2}
+    `;
+    const dataParams = [...values, limit, offset];
+
+    const { rows } = await this.db.query(dataQuery, dataParams);
+
+    return {
+      data: rows.map(mapRowToReview),
+      total,
+    };
   }
 
   async findByIdWithRelations(id: number): Promise<ReviewWithRelationsDTO | null> {

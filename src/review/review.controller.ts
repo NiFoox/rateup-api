@@ -74,19 +74,36 @@ export class ReviewController {
 
   // GET /reviews
   async list(req: Request, res: Response): Promise<void> {
-    const query: ReviewListQueryDTO =
-      (res.locals?.validated?.query as ReviewListQueryDTO) ??
-      ReviewListQuerySchema.parse(req.query);
+    try {
+      const query: ReviewListQueryDTO =
+        (res.locals?.validated?.query as ReviewListQueryDTO) ??
+        ReviewListQuerySchema.parse(req.query);
 
-    const { page, pageSize, gameId, userId } = query;
-    const offset = (page - 1) * pageSize;
+      const page = query.page ?? 1;
+      const pageSize = query.pageSize ?? 10;
+      const offset = (page - 1) * pageSize;
 
-    const reviews = await this.repository.getPaginated(offset, pageSize, {
-      gameId,
-      userId,
-    });
+      const { data, total } = await this.repository.getPaginated(
+        offset,
+        pageSize,
+        {
+          gameId: query.gameId,
+          userId: query.userId,
+        },
+      );
 
-    res.json({ page, pageSize, data: reviews });
+      res.json({
+        page,
+        pageSize,
+        total,
+        data,
+      });
+    } catch (error) {
+      console.error('[ReviewController.list] Error', error);
+      res
+        .status(500)
+        .json({ message: 'Error interno del servidor' });
+    }
   }
 
   // GET /reviews/me
@@ -104,17 +121,26 @@ export class ReviewController {
       (res.locals?.validated?.query as ReviewListQueryDTO) ??
       ReviewListQuerySchema.parse(req.query);
 
-    const { page, pageSize, gameId } = query;
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 10;
+    const gameId = query.gameId;
+
     const offset = (page - 1) * pageSize;
 
     const userId = Number(authUser.sub);
 
-    const reviews = await this.repository.getPaginated(offset, pageSize, {
-      gameId,
-      userId,
-    });
+    const { data, total } = await this.repository.getPaginated(
+      offset,
+      pageSize,
+      { gameId, userId },
+    );
 
-    res.json({ page, pageSize, data: reviews });
+    res.json({
+      page,
+      pageSize,
+      total,
+      data,
+    });
   }
 
   // GET /reviews/:id/details
