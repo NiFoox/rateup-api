@@ -216,7 +216,9 @@ export class ReviewController {
           count: comments.length,
           items: comments,
         },
-        votes: votesSummary,
+        // reviewId no es necesario pero lo puse para respetar el contrato (errado) y el front lo consume así.
+        // Aunque si no se manda queda como undefined y no pasa nada.
+        votes: { reviewId, votesSummary }, 
       });
     } catch (error) {
       if ((error as any)?.name === 'ZodError') {
