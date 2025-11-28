@@ -218,7 +218,12 @@ export class ReviewController {
         },
         // reviewId no es necesario pero lo puse para respetar el contrato (errado) y el front lo consume así.
         // Aunque si no se manda queda como undefined y no pasa nada.
-        votes: { reviewId, votesSummary }, 
+        votes: { 
+          reviewId,
+          upvotes: votesSummary.upvotes,
+          downvotes: votesSummary.downvotes,
+          score: votesSummary.score
+        },
       });
     } catch (error) {
       if ((error as any)?.name === 'ZodError') {
