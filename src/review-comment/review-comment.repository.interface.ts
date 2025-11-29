@@ -3,6 +3,7 @@ import type { ReviewCommentWithUserDTO } from './dto/review-comment-with-user.dt
 
 export interface ReviewCommentRepository {
   create(comment: ReviewComment): Promise<ReviewComment>;
+
   findById(id: number): Promise<ReviewComment | null>;
 
   getByReview(
@@ -16,6 +17,8 @@ export interface ReviewCommentRepository {
     offset: number,
     limit: number,
   ): Promise<ReviewCommentWithUserDTO[]>;
+
+  countByReview(reviewId: number): Promise<number>;
 
   update(
     id: number,

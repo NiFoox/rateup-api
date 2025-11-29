@@ -15,6 +15,20 @@ import {
   type ReviewListQueryDTO,
 } from './validators/review.validation.js';
 
+function buildVotesDto(
+  // reviewId no es necesario pero lo puse para respetar el contrato (errado) y el front lo consume así
+  // Aunque si no se manda queda como undefined y no pasa "nada".
+  reviewId: number,
+  summary: { upvotes: number; downvotes: number; score: number },
+) {
+  return {
+    reviewId,
+    upvotes: summary.upvotes,
+    downvotes: summary.downvotes,
+    score: summary.score,
+  };
+}
+
 export class ReviewController {
   constructor(
     private readonly repository: ReviewRepository,
@@ -99,10 +113,11 @@ export class ReviewController {
           // Para que ts no se queje de que reviewId puede ser undefined
           if (reviewId == null) {
             // Esto no debería pasar nunca si viene de la BD
-            throw new Error('Review sin id en getPaginatedWithVotes');
+            throw new Error('Review sin id en getPaginatedWithVotes (list)');
           }
 
           const withRelations = await this.repository.findByIdWithRelations(reviewId);
+          const commentsCount = await this.commentRepository.countByReview(reviewId);
 
           return {
             id: reviewId,
@@ -112,15 +127,13 @@ export class ReviewController {
             score: review.score,
             createdAt: review.createdAt,
             updatedAt: review.updatedAt,
+
             user: withRelations?.user,
             game: withRelations?.game,
 
-            votes: {
-              reviewId,
-              upvotes: votes.upvotes,
-              downvotes: votes.downvotes,
-              score: votes.score,
-            },
+            comments: commentsCount,
+
+            votes: buildVotesDto(reviewId, votes),
           };
         }),
       );
@@ -177,6 +190,7 @@ export class ReviewController {
           }
 
           const withRelations = await this.repository.findByIdWithRelations(reviewId);
+          const commentsCount = await this.commentRepository.countByReview(reviewId);
 
           return {
             id: reviewId,
@@ -186,15 +200,13 @@ export class ReviewController {
             score: review.score,
             createdAt: review.createdAt,
             updatedAt: review.updatedAt,
+
             user: withRelations?.user,
             game: withRelations?.game,
 
-            votes: {
-              reviewId,
-              upvotes: votes.upvotes,
-              downvotes: votes.downvotes,
-              score: votes.score,
-            },
+            comments: commentsCount,
+
+            votes: buildVotesDto(reviewId, votes),
           };
         }),
       );
@@ -284,14 +296,8 @@ export class ReviewController {
           count: comments.length,
           items: comments,
         },
-        // reviewId no es necesario pero lo puse para respetar el contrato (errado) y el front lo consume así.
-        // Aunque si no se manda queda como undefined y no pasa nada.
-        votes: { 
-          reviewId,
-          upvotes: votesSummary.upvotes,
-          downvotes: votesSummary.downvotes,
-          score: votesSummary.score
-        },
+
+        votes: buildVotesDto(reviewId, votesSummary),
       });
     } catch (error) {
       if ((error as any)?.name === 'ZodError') {

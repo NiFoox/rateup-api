@@ -13,10 +13,7 @@ const mapRowToComment = (row: any): ReviewComment =>
     row.updated_at,
   );
 
-
-export class ReviewCommentPostgresRepository
-  implements ReviewCommentRepository
-{
+export class ReviewCommentPostgresRepository implements ReviewCommentRepository {
   constructor(private readonly db: Pool) {}
 
   async create(comment: ReviewComment): Promise<ReviewComment> {
@@ -88,6 +85,15 @@ export class ReviewCommentPostgresRepository
         username: row.user_username,
       },
     }));
+  }
+
+  async countByReview(reviewId: number): Promise<number> {
+    const { rows } = await this.db.query(
+      'SELECT COUNT(*)::int AS count FROM review_comments WHERE review_id = $1',
+      [reviewId],
+    );
+
+    return Number(rows[0]?.count ?? 0);
   }
 
   async update(

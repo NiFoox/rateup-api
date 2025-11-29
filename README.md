@@ -496,6 +496,7 @@ Lista paginada de reviews creadas por el usuario autenticado.
       "score": 8,
       "createdAt": "2025-11-28T03:00:00.000Z",
       "updatedAt": "2025-11-28T03:00:00.000Z",
+
       "user": {
         "id": 5,
         "username": "string",
@@ -506,6 +507,9 @@ Lista paginada de reviews creadas por el usuario autenticado.
         "name": "string",
         "genre": "string"
       },
+
+      "comments": 2,
+
       "votes": {
         "reviewId": 1,
         "upvotes": 10,
@@ -570,7 +574,27 @@ Lista pública de reviews con paginación y filtros.
       "content": "string",
       "score": 8,
       "createdAt": "2025-11-28T03:00:00.000Z",
-      "updatedAt": "2025-11-28T03:00:00.000Z"
+      "updatedAt": "2025-11-28T03:00:00.000Z",
+
+      "user": {
+        "id": 5,
+        "username": "string",
+        "email": "string"
+      },
+      "game": {
+        "id": 3,
+        "name": "string",
+        "genre": "string"
+      },
+
+      "comments": 2,
+
+      "votes": {
+        "reviewId": 1,
+        "upvotes": 10,
+        "downvotes": 2,
+        "score": 8
+      }
     }
   ]
 }
