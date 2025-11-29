@@ -60,15 +60,24 @@ export class ReviewVoteController {
         value: vote.value,
         ...summary,
       });
-    } catch (error) {
-      if ((error as any)?.name === 'ZodError') {
-        res
-          .status(400)
-          .json({ message: 'Invalid data', details: (error as any).errors });
-        return;
+    } catch (error: any) {
+        if (error?.name === 'ZodError') {
+          res.status(400).json({ 
+            message: 'Invalid data', 
+            details: error.errors 
+          });
+          return;
+        }
+
+        if (error?.code === '23503') {
+          // foreign key violation
+          res.status(404).json({ message: 'Review not found' });
+          return;
+        }
+
+        console.error('Error en ReviewVoteController.upsert:', error);
+        res.status(500).json({ message: 'Internal server error' });
       }
-      res.status(500).json({ message: 'Internal server error' });
-    }
   }
 
   // DELETE /api/reviews/:reviewId/votes

@@ -20,18 +20,23 @@ export class ReviewVotePostgresRepository implements ReviewVoteRepository {
     userId: number,
     value: 1 | -1,
   ): Promise<ReviewVote> {
-    const { rows } = await this.db.query(
-      `
-      INSERT INTO review_votes (review_id, user_id, value)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (review_id, user_id)
-      DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
-      RETURNING *
-      `,
-      [reviewId, userId, value],
-    );
+    try {
+      const { rows } = await this.db.query(
+        `
+        INSERT INTO review_votes (review_id, user_id, value)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (review_id, user_id)
+        DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+        RETURNING *
+        `,
+        [reviewId, userId, value],
+      );
 
-    return mapRowToVote(rows[0]);
+      return mapRowToVote(rows[0]);
+    } catch (error) {
+      console.error('Error en ReviewVotePostgresRepository.upsertVote:', error);
+      throw error;
+    }
   }
 
   async deleteVote(reviewId: number, userId: number): Promise<boolean> {

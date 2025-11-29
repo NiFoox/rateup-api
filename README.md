@@ -2,10 +2,8 @@
 
 Este documento describe el contrato completo de la API del backend de RateUp, incluyendo rutas, DTOs, métodos HTTP, parámetros, estructuras de datos y reglas generales. Sirve como referencia para integrar el frontend con el backend.
 
-Base URL: `http://localhost:3000/api`
-
-Formato de datos: JSON
-
+Base URL: `http://localhost:3000/api`  
+Formato de datos: JSON  
 Autenticación: JWT (Bearer Token) en el header `Authorization`
 
 ---
@@ -54,7 +52,9 @@ Registra un usuario.
 {
   "username": "string",
   "email": "string",
-  "password": "string"
+  "password": "string",
+  "roles": ["USER"],
+  "isActive": "boolean"
 }
 ```
 
@@ -168,7 +168,7 @@ Crea un usuario.
 {
   "username": "string",
   "email": "string",
-  "password": "string"
+  "password": "string",
   "roles": ["USER"],
   "isActive": true,
 }
@@ -295,31 +295,43 @@ Devuelve un juego.
 
 ## GET `/games`
 
-Lista de juegos (paginada o completa).
+Lista de juegos, con soporte de paginación y filtros.
 
 **Query params:**
 
-* `page`
-* `limit`
-* `search`
-* `genre`
-* `all` (boolean)
+- `page` (number, opcional, default: 1)
+- `limit` (number, opcional, default: 20)
+- `search` (string, opcional) – busca por nombre o descripción (ILIKE)
+- `genre` (string, opcional)
+- `all` (boolean, opcional) – si es `true`, ignora paginación y devuelve todos los juegos
 
-Si `all=true`:
-
-```json
-[ Game ]
-```
-
-Si `all=false`:
+**Response 200 (modo paginado, `all` ausente o `false`):**
 
 ```json
 {
   "page": 1,
   "limit": 20,
-  "data": [ Game ]
+  "total": 47,
+  "data": [
+    {
+      "id": 1,
+      "name": "string",
+      "description": "string",
+      "genre": "string"
+    }
+  ]
 }
-```
+
+**Response 200 (modo all=true):**
+
+[
+  {
+    "id": 1,
+    "name": "string",
+    "description": "string",
+    "genre": "string"
+  }
+]
 
 ---
 
@@ -454,15 +466,19 @@ Devuelve reseñas con actividad reciente.
 
 ---
 
-## GET `/reviews/me` (login requerido)
+## GET `/reviews/me` (login/auth requerido)
 
-Lista las reseñas del usuario autenticado.
+Lista paginada de reviews creadas por el usuario autenticado.
+
+**Auth:**
+
+- Header `Authorization: Bearer <token>`
 
 **Query params:**
 
-* `page`
-* `pageSize`
-* `gameId`
+- `page` (number, opcional, default: 1)
+- `pageSize` (number, opcional, default: 10, máx: 100)
+- `gameId` (number, opcional) – filtra por juego dentro de las reviews del usuario
 
 **Response 200:**
 
@@ -470,7 +486,34 @@ Lista las reseñas del usuario autenticado.
 {
   "page": 1,
   "pageSize": 10,
-  "data": [ Review ]
+  "total": 12,
+  "data": [
+    {
+      "id": 1,
+      "gameId": 3,
+      "userId": 5,
+      "content": "string",
+      "score": 8,
+      "createdAt": "2025-11-28T03:00:00.000Z",
+      "updatedAt": "2025-11-28T03:00:00.000Z",
+      "user": {
+        "id": 5,
+        "username": "string",
+        "email": "string"
+      },
+      "game": {
+        "id": 3,
+        "name": "string",
+        "genre": "string"
+      },
+      "votes": {
+        "reviewId": 1,
+        "upvotes": 10,
+        "downvotes": 2,
+        "score": 8
+      }
+    }
+  ]
 }
 ```
 
@@ -503,14 +546,14 @@ Obtiene una reseña por id.
 
 ## GET `/reviews`
 
-Lista pública de reseñas.
+Lista pública de reviews con paginación y filtros.
 
 **Query params:**
 
-* `page`
-* `pageSize`
-* `gameId`
-* `userId`
+- `page` (number, opcional, default: 1)
+- `pageSize` (number, opcional, default: 10, máx: 100)
+- `gameId` (number, opcional)
+- `userId` (number, opcional)
 
 **Response 200:**
 
@@ -518,7 +561,18 @@ Lista pública de reseñas.
 {
   "page": 1,
   "pageSize": 10,
-  "data": [ Review ]
+  "total": 50,
+  "data": [
+    {
+      "id": 1,
+      "gameId": 3,
+      "userId": 5,
+      "content": "string",
+      "score": 8,
+      "createdAt": "2025-11-28T03:00:00.000Z",
+      "updatedAt": "2025-11-28T03:00:00.000Z"
+    }
+  ]
 }
 ```
 
@@ -545,7 +599,15 @@ Detalle completo: review, comments, votes.
 ```json
 {
   "reviewId": 1,
-  "review": ReviewWithRelationsDTO,
+  "review": {
+    "id": 1,
+    "content": "string",
+    "score": 4,
+    "createdAt": "string",
+    "updatedAt": "string",
+    "user": { "id": 2, "username": "string", "email": "string" },
+    "game": { "id": 7, "name": "string", "genre": "string" }
+  },
   "comments": {
     "page": 1,
     "pageSize": 10,
@@ -553,6 +615,7 @@ Detalle completo: review, comments, votes.
     "items": [ ReviewCommentWithUserDTO ]
   },
   "votes": {
+    "reviewId": 1,
     "upvotes": 10,
     "downvotes": 2,
     "score": 8
@@ -648,6 +711,7 @@ Lista de comentarios sin datos de usuario.
 
 ```json
 {
+  "reviewId": 1,
   "page": 1,
   "pageSize": 10,
   "data": [ ReviewComment ]
@@ -669,9 +733,11 @@ Lista de comentarios con datos de usuario.
 
 ```json
 {
+  "reviewId": 1,
   "page": 1,
   "pageSize": 10,
-  "data": [ ReviewCommentWithUserDTO ]
+  "count": 2,
+  "items": [ ReviewCommentWithUserDTO ]
 }
 ```
 
@@ -719,7 +785,7 @@ Elimina un comentario.
 
 Obtiene el resumen de votos.
 
-**Response 200:** Vote Summary DTO
+**Response 200:** Vote Summary DTO (incluye `reviewId` en la raíz)
 
 ---
 
@@ -735,14 +801,35 @@ Crea o actualiza un voto.
 }
 ```
 
-**Response 200:** Vote Summary DTO actualizado
+**Response 200:**
+
+```json
+{
+  "reviewId": 1,
+  "userId": 5,
+  "value": 1,
+  "upvotes": 10,
+  "downvotes": 2,
+  "score": 8
+}
+```
 
 ---
 
 ## DELETE `/reviews/:reviewId/votes` (login requerido)
 
 Elimina el voto del usuario.
-**Response 204** sin cuerpo.
+**Response 200:**
+
+```json
+{
+  "reviewId": 1,
+  "deleted": true,
+  "upvotes": 9,
+  "downvotes": 1,
+  "score": 8
+}
+```
 
 ---
 

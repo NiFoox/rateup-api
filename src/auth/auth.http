@@ -2,10 +2,14 @@
 POST http://localhost:3000/api/auth/register
 Content-Type: application/json
 
+# Body: incluir roles (USER/ADMIN), password de 8+ caracteres; isActive es opcional (default true)
+
 {
   "username": "nuevo",
   "email": "nuevo@example.com",
-  "password": "password123"
+  "password": "password123",
+  "roles": ["USER", "ADMIN"],
+  "isActive": true
 }
 
 ### Login

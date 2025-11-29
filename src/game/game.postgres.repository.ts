@@ -32,7 +32,7 @@ export class GamePostgresRepository implements GameRepository {
     offset: number,
     limit: number,
     opts?: { search?: string; genre?: string },
-  ): Promise<Game[]> {
+  ): Promise<{ data: Game[]; total: number }> {
     const where: string[] = [];
     const params: any[] = [];
     let i = 1;
@@ -42,6 +42,7 @@ export class GamePostgresRepository implements GameRepository {
       params.push(`%${opts.search}%`);
       i++;
     }
+
     if (opts?.genre) {
       where.push(`genre = $${i}`);
       params.push(opts.genre);
@@ -50,6 +51,13 @@ export class GamePostgresRepository implements GameRepository {
 
     const whereSQL = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
+    const countSql = `SELECT COUNT(*)::int AS count FROM games ${whereSQL}`;
+    const countResult = await this.db.query<{ count: number }>(
+      countSql,
+      params,
+    );
+    const total = Number(countResult.rows[0]?.count ?? 0);
+
     const sql = `
       SELECT id, name, description, genre
       FROM games
@@ -57,10 +65,14 @@ export class GamePostgresRepository implements GameRepository {
       ORDER BY id
       LIMIT $${i} OFFSET $${i + 1}
     `;
-    params.push(limit, offset);
+    const pageParams = [...params, limit, offset];
 
-    const { rows } = await this.db.query<Game>(sql, params);
-    return rows;
+    const { rows } = await this.db.query<Game>(sql, pageParams);
+
+    return {
+      data: rows,
+      total,
+    };
   } // Se ordena por id, agregarle order by name después
 
   async getAll(): Promise<Game[]> {

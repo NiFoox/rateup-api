@@ -50,16 +50,29 @@ export class GameController {
       (res.locals?.validated?.query as GameListQueryDTO) ??
       GameListQuerySchema.parse(req.query);
 
-    const { page, limit, search, genre, all } = q;
+    const page = q.page ?? 1;
+    const limit = q.limit ?? 20;
+    const { search, genre, all } = q;
 
     if (all) {
       const games = await this.repo.getAll();
       return res.json(games);
-    } else {
-      const offset = (page - 1) * limit;
-      const games = await this.repo.getPaginated(offset, limit, { search, genre });
-      return res.json({ page, limit, data: games });
+      // return res.json({ total: games.length, data: games });
     }
+
+    const offset = (page - 1) * limit;
+
+    const { data, total } = await this.repo.getPaginated(offset, limit, {
+      search,
+      genre,
+    });
+
+    return res.json({
+      page,
+      limit,
+      total,
+      data,
+    });
   }
 
   // Update (PATCH)
