@@ -83,7 +83,7 @@ export class ReviewController {
       const pageSize = query.pageSize ?? 10;
       const offset = (page - 1) * pageSize;
 
-      const { data, total } = await this.repository.getPaginated(
+      const { data, total } = await this.repository.getPaginatedWithVotes(
         offset,
         pageSize,
         {
@@ -92,11 +92,44 @@ export class ReviewController {
         },
       );
 
+      const items = await Promise.all(
+        data.map(async ({ review, votes }) => {
+          const reviewId = review.id;
+
+          // Para que ts no se queje de que reviewId puede ser undefined
+          if (reviewId == null) {
+            // Esto no debería pasar nunca si viene de la BD
+            throw new Error('Review sin id en getPaginatedWithVotes');
+          }
+
+          const withRelations = await this.repository.findByIdWithRelations(reviewId);
+
+          return {
+            id: reviewId,
+            gameId: review.gameId,
+            userId: review.userId,
+            content: review.content,
+            score: review.score,
+            createdAt: review.createdAt,
+            updatedAt: review.updatedAt,
+            user: withRelations?.user,
+            game: withRelations?.game,
+
+            votes: {
+              reviewId,
+              upvotes: votes.upvotes,
+              downvotes: votes.downvotes,
+              score: votes.score,
+            },
+          };
+        }),
+      );
+
       res.json({
         page,
         pageSize,
         total,
-        data,
+        data: items,
       });
     } catch (error) {
       console.error('[ReviewController.list] Error', error);
@@ -117,30 +150,65 @@ export class ReviewController {
       return;
     }
 
-    const query: ReviewListQueryDTO =
-      (res.locals?.validated?.query as ReviewListQueryDTO) ??
-      ReviewListQuerySchema.parse(req.query);
+    try {
+      const query: ReviewListQueryDTO =
+        (res.locals?.validated?.query as ReviewListQueryDTO) ??
+        ReviewListQuerySchema.parse(req.query);
 
-    const page = query.page ?? 1;
-    const pageSize = query.pageSize ?? 10;
-    const gameId = query.gameId;
+      const page = query.page ?? 1;
+      const pageSize = query.pageSize ?? 10;
+      const gameId = query.gameId;
+      const offset = (page - 1) * pageSize;
 
-    const offset = (page - 1) * pageSize;
+      const userId = Number(authUser.sub);
 
-    const userId = Number(authUser.sub);
+      const { data, total } = await this.repository.getPaginatedWithVotes(
+        offset,
+        pageSize,
+        { gameId, userId },
+      );
 
-    const { data, total } = await this.repository.getPaginated(
-      offset,
-      pageSize,
-      { gameId, userId },
-    );
+      const items = await Promise.all(
+        data.map(async ({ review, votes }) => {
+          const reviewId = review.id;
 
-    res.json({
-      page,
-      pageSize,
-      total,
-      data,
-    });
+          if (reviewId == null) {
+            throw new Error('Review sin id en getPaginatedWithVotes (listMine)');
+          }
+
+          const withRelations = await this.repository.findByIdWithRelations(reviewId);
+
+          return {
+            id: reviewId,
+            gameId: review.gameId,
+            userId: review.userId,
+            content: review.content,
+            score: review.score,
+            createdAt: review.createdAt,
+            updatedAt: review.updatedAt,
+            user: withRelations?.user,
+            game: withRelations?.game,
+
+            votes: {
+              reviewId,
+              upvotes: votes.upvotes,
+              downvotes: votes.downvotes,
+              score: votes.score,
+            },
+          };
+        }),
+      );
+
+      res.json({
+        page,
+        pageSize,
+        total,
+        data: items,
+      });
+    } catch (error) {
+      console.error('[ReviewController.listMine] Error', error);
+      res.status(500).json({ message: 'Error interno del servidor' });
+    }
   }
 
   // GET /reviews/:id/details

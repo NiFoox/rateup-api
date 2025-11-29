@@ -13,6 +13,18 @@ export interface ReviewRepository {
     opts?: { gameId?: number; userId?: number },
   ): Promise<{ data: Review[]; total: number }>;
 
+  getPaginatedWithVotes(
+    offset: number,
+    limit: number,
+    opts?: { gameId?: number; userId?: number }
+  ): Promise<{
+    data: Array<{
+      review: Review;
+      votes: { upvotes: number; downvotes: number; score: number };
+    }>;
+    total: number;
+  }>;
+
   findByIdWithRelations(id: number): Promise<ReviewWithRelationsDTO | null>;
 
   getTrendingReviews(

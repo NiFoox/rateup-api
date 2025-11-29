@@ -78,6 +78,88 @@ export class ReviewPostgresRepository implements ReviewRepository {
     };
   }
 
+  async getPaginatedWithVotes(
+    offset: number,
+    limit: number,
+    opts?: { gameId?: number; userId?: number },
+  ): Promise<{
+    data: Array<{
+      review: Review;
+      votes: { upvotes: number; downvotes: number; score: number };
+    }>;
+    total: number;
+  }> {
+    const where: string[] = [];
+    const values: any[] = [];
+
+    if (opts?.gameId) {
+      values.push(opts.gameId);
+      where.push(`r.game_id = $${values.length}`);
+    }
+
+    if (opts?.userId) {
+      values.push(opts.userId);
+      where.push(`r.user_id = $${values.length}`);
+    }
+
+    const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+    // total de reviews (sin importar votos)
+    const countQuery = `
+      SELECT COUNT(*)::int AS count
+      FROM reviews r
+      ${whereClause}
+    `;
+    const countResult = await this.db.query(countQuery, values);
+    const total = Number(countResult.rows[0]?.count ?? 0);
+
+    // datos con agregados de votos
+    const dataQuery = `
+      SELECT
+        r.id,
+        r.game_id,
+        r.user_id,
+        r.content,
+        r.score,
+        r.created_at,
+        r.updated_at,
+        COALESCE(COUNT(*) FILTER (WHERE rv.value = 1), 0)   AS votes_upvotes,
+        COALESCE(COUNT(*) FILTER (WHERE rv.value = -1), 0)  AS votes_downvotes,
+        COALESCE(SUM(rv.value), 0)                          AS votes_score
+      FROM reviews r
+      LEFT JOIN review_votes rv ON rv.review_id = r.id
+      ${whereClause}
+      GROUP BY
+        r.id,
+        r.game_id,
+        r.user_id,
+        r.content,
+        r.score,
+        r.created_at,
+        r.updated_at
+      ORDER BY r.id
+      LIMIT $${values.length + 1}
+      OFFSET $${values.length + 2}
+    `;
+
+    const dataParams = [...values, limit, offset];
+    const { rows } = await this.db.query(dataQuery, dataParams);
+
+    const data = rows.map((row) => {
+      const review = mapRowToReview(row);
+
+      const votes = {
+        upvotes: Number(row.votes_upvotes ?? 0),
+        downvotes: Number(row.votes_downvotes ?? 0),
+        score: Number(row.votes_score ?? 0),
+      };
+
+      return { review, votes };
+    });
+
+    return { data, total };
+  }
+
   async findByIdWithRelations(id: number): Promise<ReviewWithRelationsDTO | null> {
     const query = `
       SELECT
