@@ -10,6 +10,7 @@ import buildReviewCommentRouter from './review-comment/review-comment.routes.js'
 import buildReviewVoteRouter from './review-vote/review-vote.routes.js';
 import buildHomeRouter from './home/home.routes.js';
 import { container } from './shared/container.js';
+import { httpErrorMiddleware } from './shared/errors/http-error.middleware.js';
 
 const app = express();
 
@@ -60,6 +61,8 @@ app.use(
   ),
 );
 
+app.use(httpErrorMiddleware);
+
 export default app;
 
 // TODO:
@@ -70,3 +73,12 @@ export default app;
 // - Más tests
 // - Levantar api en docker?
 // - Probar llamar api externa?
+// - Agregar total en comments/details para que soporte paginación
+// - Refactorizar PATCH de Users
+// - Refactorizar el register para no darse ADMIN.
+// - Refactorizar auth middleware para que no falle con token inválido
+// - Refactorizar controllers para no repetir tanto el parseo/validación de dto
+// - Refactorizar los servicios para que lancen errores específicos y no genéricos
+// - Refactorizar los repos para que lancen errores específicos y no genéricos
+// - Refactorizar para estandarizar las respuestas de listas (data + total)
+// - Refactorizar para estandarizar el RequireAuth middleware
