@@ -17,7 +17,7 @@ const UserBaseSchema = z
   })
   .strict();
 
-// Crear usuario (admin crea usuarios, o register si lo usás así)
+// Crear usuario
 export const UserCreateSchema = UserBaseSchema;
 
 // Actualizar usuario (parcial)
