@@ -21,13 +21,23 @@ export class ReviewVoteController {
 
     const summary = await this.repository.getSummary(reviewId);
 
+    const authReq = req as AuthenticatedRequest;
+    const authUser = authReq.user;
+
+    let userVote: -1 | 0 | 1 = 0;
+    if (authUser) {
+      const userId = Number(authUser.sub);
+      userVote = await this.repository.getUserVote(reviewId, userId);
+    }
+
     res.json({
       reviewId,
       ...summary,
+      userVote,
     });
   }
 
-  // PUT /api/reviews/:reviewId/votes
+  // POST /api/reviews/:reviewId/votes
   async upsert(req: Request, res: Response): Promise<void> {
     try {
       const params: ReviewVoteParamsDTO =

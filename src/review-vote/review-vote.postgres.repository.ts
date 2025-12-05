@@ -76,4 +76,27 @@ export class ReviewVotePostgresRepository implements ReviewVoteRepository {
       score: Number(row.score ?? 0),
     };
   }
+
+  async getUserVote(reviewId: number, userId: number): Promise<-1 | 0 | 1> {
+    const { rows } = await this.db.query(
+      `
+      SELECT value
+      FROM review_votes
+      WHERE review_id = $1 AND user_id = $2
+      LIMIT 1
+      `,
+      [reviewId, userId],
+    );
+
+    const row = rows[0];
+
+    if (!row || row.value == null) {
+      return 0;
+    }
+
+    const value = Number(row.value);
+    if (value === 1) return 1;
+    if (value === -1) return -1;
+    return 0;
+  }
 }

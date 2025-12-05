@@ -4,7 +4,7 @@ import {
   validateParams,
   validateQuery,
 } from '../shared/middlewares/validate.js';
-import { requireAuth } from '../shared/middlewares/auth.js';
+import { requireAuth, optionalAuth } from '../shared/middlewares/auth.js';
 import { ReviewController } from './review.controller.js';
 import {
   ReviewCreateSchema,
@@ -28,7 +28,7 @@ export default function buildReviewRouter(
     reviewVoteRepository,
   );
 
-  // Mis reseñas (usuario logueado) -> IMPORTANTE: antes de '/:id'
+  // Mis reseñas (usuario logueado) | antes de '/:id'
   router.get(
     '/me',
     requireAuth,
@@ -44,16 +44,10 @@ export default function buildReviewRouter(
     controller.create.bind(controller),
   );
 
-  // Obtener reseña por id - público
-  router.get(
-    '/:id',
-    validateParams(ReviewIdParamSchema),
-    controller.getById.bind(controller),
-  );
-
-  // Listar reseñas - público, con filtros opcionales
+  // Listar reseñas públicas
   router.get(
     '/',
+    optionalAuth,
     validateQuery(ReviewListQuerySchema),
     controller.list.bind(controller),
   );
@@ -65,11 +59,19 @@ export default function buildReviewRouter(
     controller.getWithRelations.bind(controller),
   );
 
-  // Obtener reseña completa
+  // Obtener reseña completa (full + comments + votes + userVote)
   router.get(
     '/:id/full',
+    optionalAuth,
     validateParams(ReviewIdParamSchema),
     controller.getFull.bind(controller),
+  );
+
+  // Obtener reseña por id - público
+  router.get(
+    '/:id',
+    validateParams(ReviewIdParamSchema),
+    controller.getById.bind(controller)
   );
 
   // Actualizar reseña (dueño o ADMIN)

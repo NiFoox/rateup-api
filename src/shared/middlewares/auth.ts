@@ -74,6 +74,61 @@ export function requireAuth(
   }
 }
 
+// Si NO hay Authorization → sigue como público (req.user = undefined).
+// Si hay Authorization y el token es válido → setea req.user.
+// Si hay token inválido/roto → lo tratamos como “no autenticado” y seguimos.
+export function optionalAuth(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  const token = authHeader.substring('Bearer '.length);
+
+  try {
+    const decoded = jwt.verify(token, getJwtSecret());
+
+    if (!decoded || typeof decoded !== 'object') {
+      return next();
+    }
+
+    const payload = decoded as JwtPayload;
+
+    const email = (payload as any).email;
+    const roles = (payload as any).roles;
+
+    if (
+      typeof payload.sub !== 'string' ||
+      typeof email !== 'string' ||
+      !Array.isArray(roles)
+    ) {
+      return next();
+    }
+
+    const userPayload: JwtUserPayload = {
+      ...payload,
+      sub: payload.sub,
+      email,
+      roles,
+    };
+
+    req.user = userPayload;
+
+    return next();
+  } catch (error) {
+    if (error instanceof Error && error.message === 'JWT_SECRET is not defined') {
+      return res.status(500).json({ error: 'Config de JWT incompleta' });
+    }
+
+    return next();
+  }
+}
+
 export function requireRole(...roles: UserRole[]) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const user = req.user;

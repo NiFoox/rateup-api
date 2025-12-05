@@ -81,7 +81,7 @@ export class ReviewPostgresRepository implements ReviewRepository {
   async getPaginatedWithVotes(
     offset: number,
     limit: number,
-    opts?: { gameId?: number; userId?: number },
+    opts?: { gameId?: number; userId?: number; search?: string },
   ): Promise<{
     data: Array<{
       review: Review;
@@ -102,18 +102,32 @@ export class ReviewPostgresRepository implements ReviewRepository {
       where.push(`r.user_id = $${values.length}`);
     }
 
+    if (opts?.search) {
+      values.push(`%${opts.search}%`);
+      const idx = values.length;
+      where.push(`
+        (
+          r.content ILIKE $${idx}
+          OR g.name ILIKE $${idx}
+          OR u.username ILIKE $${idx}
+        )
+      `);
+    }
+
     const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
-    // total de reviews (sin importar votos)
+    // 1) total de reviews (sin join con votos para no duplicar)
     const countQuery = `
       SELECT COUNT(*)::int AS count
       FROM reviews r
+      JOIN games g ON g.id = r.game_id
+      JOIN users u ON u.id = r.user_id
       ${whereClause}
     `;
     const countResult = await this.db.query(countQuery, values);
     const total = Number(countResult.rows[0]?.count ?? 0);
 
-    // datos con agregados de votos
+    // 2) datos con agregados de votos
     const dataQuery = `
       SELECT
         r.id,
@@ -127,6 +141,8 @@ export class ReviewPostgresRepository implements ReviewRepository {
         COALESCE(COUNT(*) FILTER (WHERE rv.value = -1), 0)  AS votes_downvotes,
         COALESCE(SUM(rv.value), 0)                          AS votes_score
       FROM reviews r
+      JOIN games g ON g.id = r.game_id
+      JOIN users u ON u.id = r.user_id
       LEFT JOIN review_votes rv ON rv.review_id = r.id
       ${whereClause}
       GROUP BY
@@ -267,7 +283,6 @@ export class ReviewPostgresRepository implements ReviewRepository {
       },
     }));
   }
-
 
   async update(id: number, data: Partial<Review>): Promise<Review | undefined> {
     const fields: string[] = [];

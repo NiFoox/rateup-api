@@ -16,7 +16,7 @@ export interface ReviewRepository {
   getPaginatedWithVotes(
     offset: number,
     limit: number,
-    opts?: { gameId?: number; userId?: number }
+    opts?: { gameId?: number; userId?: number ; search?: string },
   ): Promise<{
     data: Array<{
       review: Review;

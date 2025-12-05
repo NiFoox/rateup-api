@@ -36,7 +36,7 @@ export class ReviewController {
     private readonly voteRepository: ReviewVoteRepository,
   ) {}
 
-  // POST /reviews
+  // POST /api/reviews
   async create(req: Request, res: Response): Promise<void> {
     try {
       const body: ReviewCreateDTO =
@@ -103,8 +103,13 @@ export class ReviewController {
         {
           gameId: query.gameId,
           userId: query.userId,
+          search: query.search,
         },
       );
+
+      const authReq = req as AuthenticatedRequest;
+      const authUser = authReq.user;
+      const currentUserId = authUser ? Number(authUser.sub) : null;
 
       const items = await Promise.all(
         data.map(async ({ review, votes }) => {
@@ -118,6 +123,11 @@ export class ReviewController {
 
           const withRelations = await this.repository.findByIdWithRelations(reviewId);
           const commentsCount = await this.commentRepository.countByReview(reviewId);
+
+          let userVote: -1 | 0 | 1 = 0;
+          if (currentUserId != null) {
+            userVote = await this.voteRepository.getUserVote(reviewId, currentUserId);
+          }
 
           return {
             id: reviewId,
@@ -134,6 +144,7 @@ export class ReviewController {
             comments: commentsCount,
 
             votes: buildVotesDto(reviewId, votes),
+            userVote,
           };
         }),
       );
@@ -146,9 +157,7 @@ export class ReviewController {
       });
     } catch (error) {
       console.error('[ReviewController.list] Error', error);
-      res
-        .status(500)
-        .json({ message: 'Error interno del servidor' });
+      res.status(500).json({ message: 'Error interno del servidor' });
     }
   }
 
@@ -170,7 +179,6 @@ export class ReviewController {
 
       const page = query.page ?? 1;
       const pageSize = query.pageSize ?? 10;
-      const gameId = query.gameId;
       const offset = (page - 1) * pageSize;
 
       const userId = Number(authUser.sub);
@@ -178,7 +186,11 @@ export class ReviewController {
       const { data, total } = await this.repository.getPaginatedWithVotes(
         offset,
         pageSize,
-        { gameId, userId },
+        {
+          gameId: query.gameId,
+          userId: Number(authUser.sub),
+          search: query.search,
+        },
       );
 
       const items = await Promise.all(
@@ -191,6 +203,8 @@ export class ReviewController {
 
           const withRelations = await this.repository.findByIdWithRelations(reviewId);
           const commentsCount = await this.commentRepository.countByReview(reviewId);
+
+          const userVote = await this.voteRepository.getUserVote(reviewId, userId);
 
           return {
             id: reviewId,
@@ -207,6 +221,8 @@ export class ReviewController {
             comments: commentsCount,
 
             votes: buildVotesDto(reviewId, votes),
+
+            userVote,
           };
         }),
       );
@@ -272,6 +288,7 @@ export class ReviewController {
       const offset = (commentsPage - 1) * commentsPageSize;
       const limit = commentsPageSize;
 
+      const commentsCount = await this.commentRepository.countByReview(reviewId);
       const review = await this.repository.findByIdWithRelations(reviewId);
 
       if (!review) {
@@ -287,23 +304,34 @@ export class ReviewController {
 
       const votesSummary = await this.voteRepository.getSummary(reviewId);
 
+      const authReq = req as AuthenticatedRequest;
+      const authUser = authReq.user;
+      let userVote: -1 | 0 | 1 = 0;
+
+      if (authUser) {
+        const userId = Number(authUser.sub);
+        userVote = await this.voteRepository.getUserVote(reviewId, userId);
+      }
+
       res.json({
         reviewId,
         review,
         comments: {
           page: commentsPage,
           pageSize: commentsPageSize,
-          count: comments.length,
-          items: comments,
+          total: commentsCount,
+          data: comments,
         },
 
         votes: buildVotesDto(reviewId, votesSummary),
+        
+        userVote,
       });
-    } catch (error) {
-      if ((error as any)?.name === 'ZodError') {
+    } catch (error: any) {
+      if (error?.name === 'ZodError') {
         res.status(400).json({
           message: 'Invalid data',
-          details: (error as any).errors,
+          details: error.errors,
         });
         return;
       }
