@@ -2,8 +2,12 @@
 GET http://localhost:3000/api/reviews/1/votes
 Content-Type: application/json
 
+### GET resumen de votos con usuario autenticado (userVote -1|0|1)
+GET http://localhost:3000/api/reviews/1/votes
+Authorization: Bearer PASTE_JWT_TOKEN_HERE
+
 ### Upvote (value = 1) una review (requiere usuario logueado)
-PUT http://localhost:3000/api/reviews/1/votes
+POST http://localhost:3000/api/reviews/1/votes
 Content-Type: application/json
 Authorization: Bearer PASTE_JWT_TOKEN_HERE
 
@@ -12,7 +16,7 @@ Authorization: Bearer PASTE_JWT_TOKEN_HERE
 }
 
 ### Downvote (value = -1) la misma review (requiere usuario logueado)
-PUT http://localhost:3000/api/reviews/1/votes
+POST http://localhost:3000/api/reviews/1/votes
 Content-Type: application/json
 Authorization: Bearer PASTE_JWT_TOKEN_HERE
 

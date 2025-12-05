@@ -15,7 +15,7 @@ import {
 export class GameController {
   constructor(private readonly repo: GameRepository) {}
 
-  // Create
+  // POST /api/games (ADMIN crea juegos)
   async create(req: Request, res: Response) {
     const body: GameCreateDTO =
       (res.locals?.validated?.body as GameCreateDTO) ??
@@ -33,7 +33,7 @@ export class GameController {
     return res.status(201).location(`/games/${saved.id}`).json(saved);
   }
 
-  // Read
+  // GET /api/games/:id (Público)
   async getById(req: Request, res: Response) {
     const params: GameIdParamDTO =
       (res.locals?.validated?.params as GameIdParamDTO) ??
@@ -45,6 +45,7 @@ export class GameController {
       : res.status(404).json({ error: 'Juego no encontrado' });
   }
 
+  // GET /api/games (Público, paginado y con filtros)
   async list(req: Request, res: Response) {
     const q: GameListQueryDTO =
       (res.locals?.validated?.query as GameListQueryDTO) ??
@@ -75,7 +76,7 @@ export class GameController {
     });
   }
 
-  // Update (PATCH)
+  // PATCH /api/games/:id (ADMIN)
   async patch(req: Request, res: Response) {
     const params: GameIdParamDTO =
       (res.locals?.validated?.params as GameIdParamDTO) ??
@@ -93,7 +94,7 @@ export class GameController {
       : res.status(404).json({ error: 'Juego no encontrado' });
   }
 
-  // Delete
+  // DELETE /api/games/:id (ADMIN)
   async delete(req: Request, res: Response) {
     const params: GameIdParamDTO =
       (res.locals?.validated?.params as GameIdParamDTO) ??
