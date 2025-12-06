@@ -40,7 +40,7 @@ export class ReviewPostgresRepository implements ReviewRepository {
     offset: number,
     limit: number,
     opts?: { gameId?: number; userId?: number },
-  ): Promise<Review[]> {
+  ): Promise<{ data: Review[]; total: number }> {
     const where: string[] = [];
     const values: any[] = [];
 
@@ -56,17 +56,124 @@ export class ReviewPostgresRepository implements ReviewRepository {
 
     const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
-    values.push(limit, offset);
-    const { rows } = await this.db.query(
-      `SELECT * FROM reviews
-       ${whereClause}
-       ORDER BY id
-       LIMIT $${values.length - 1}
-       OFFSET $${values.length}`,
-      values,
-    );
+    const countQuery = `SELECT COUNT(*)::int AS count FROM reviews ${whereClause}`;
+    const countResult = await this.db.query(countQuery, values);
+    const total = Number(countResult.rows[0]?.count ?? 0);
 
-    return rows.map(mapRowToReview);
+    const dataQuery = `
+      SELECT *
+      FROM reviews
+      ${whereClause}
+      ORDER BY id
+      LIMIT $${values.length + 1}
+      OFFSET $${values.length + 2}
+    `;
+    const dataParams = [...values, limit, offset];
+
+    const { rows } = await this.db.query(dataQuery, dataParams);
+
+    return {
+      data: rows.map(mapRowToReview),
+      total,
+    };
+  }
+
+  async getPaginatedWithVotes(
+    offset: number,
+    limit: number,
+    opts?: { gameId?: number; userId?: number; search?: string },
+  ): Promise<{
+    data: Array<{
+      review: Review;
+      votes: { upvotes: number; downvotes: number; score: number };
+    }>;
+    total: number;
+  }> {
+    const where: string[] = [];
+    const values: any[] = [];
+
+    if (opts?.gameId) {
+      values.push(opts.gameId);
+      where.push(`r.game_id = $${values.length}`);
+    }
+
+    if (opts?.userId) {
+      values.push(opts.userId);
+      where.push(`r.user_id = $${values.length}`);
+    }
+
+    if (opts?.search) {
+      values.push(`%${opts.search}%`);
+      const idx = values.length;
+      where.push(`
+        (
+          r.content ILIKE $${idx}
+          OR g.name ILIKE $${idx}
+          OR u.username ILIKE $${idx}
+        )
+      `);
+    }
+
+    const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+    // 1) total de reviews (sin join con votos para no duplicar)
+    const countQuery = `
+      SELECT COUNT(*)::int AS count
+      FROM reviews r
+      JOIN games g ON g.id = r.game_id
+      JOIN users u ON u.id = r.user_id
+      ${whereClause}
+    `;
+    const countResult = await this.db.query(countQuery, values);
+    const total = Number(countResult.rows[0]?.count ?? 0);
+
+    // 2) datos con agregados de votos
+    const dataQuery = `
+      SELECT
+        r.id,
+        r.game_id,
+        r.user_id,
+        r.content,
+        r.score,
+        r.created_at,
+        r.updated_at,
+        COALESCE(COUNT(*) FILTER (WHERE rv.value = 1), 0)   AS votes_upvotes,
+        COALESCE(COUNT(*) FILTER (WHERE rv.value = -1), 0)  AS votes_downvotes,
+        COALESCE(SUM(rv.value), 0)                          AS votes_score
+      FROM reviews r
+      JOIN games g ON g.id = r.game_id
+      JOIN users u ON u.id = r.user_id
+      LEFT JOIN review_votes rv ON rv.review_id = r.id
+      ${whereClause}
+      GROUP BY
+        r.id,
+        r.game_id,
+        r.user_id,
+        r.content,
+        r.score,
+        r.created_at,
+        r.updated_at
+      ORDER BY r.id
+      LIMIT $${values.length + 1}
+      OFFSET $${values.length + 2}
+    `;
+
+    const dataParams = [...values, limit, offset];
+    const { rows } = await this.db.query(dataQuery, dataParams);
+
+    const data = rows.map((row) => {
+      const review = mapRowToReview(row);
+
+      const votes = {
+        upvotes: Number(row.votes_upvotes ?? 0),
+        downvotes: Number(row.votes_downvotes ?? 0),
+        score: Number(row.votes_score ?? 0),
+      };
+
+      return { review, votes };
+    });
+
+    return { data, total };
   }
 
   async findByIdWithRelations(id: number): Promise<ReviewWithRelationsDTO | null> {
@@ -176,7 +283,6 @@ export class ReviewPostgresRepository implements ReviewRepository {
       },
     }));
   }
-
 
   async update(id: number, data: Partial<Review>): Promise<Review | undefined> {
     const fields: string[] = [];

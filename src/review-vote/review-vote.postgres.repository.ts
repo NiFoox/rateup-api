@@ -20,18 +20,23 @@ export class ReviewVotePostgresRepository implements ReviewVoteRepository {
     userId: number,
     value: 1 | -1,
   ): Promise<ReviewVote> {
-    const { rows } = await this.db.query(
-      `
-      INSERT INTO review_votes (review_id, user_id, value)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (review_id, user_id)
-      DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
-      RETURNING *
-      `,
-      [reviewId, userId, value],
-    );
+    try {
+      const { rows } = await this.db.query(
+        `
+        INSERT INTO review_votes (review_id, user_id, value)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (review_id, user_id)
+        DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+        RETURNING *
+        `,
+        [reviewId, userId, value],
+      );
 
-    return mapRowToVote(rows[0]);
+      return mapRowToVote(rows[0]);
+    } catch (error) {
+      console.error('Error en ReviewVotePostgresRepository.upsertVote:', error);
+      throw error;
+    }
   }
 
   async deleteVote(reviewId: number, userId: number): Promise<boolean> {
@@ -70,5 +75,28 @@ export class ReviewVotePostgresRepository implements ReviewVoteRepository {
       downvotes: Number(row.downvotes ?? 0),
       score: Number(row.score ?? 0),
     };
+  }
+
+  async getUserVote(reviewId: number, userId: number): Promise<-1 | 0 | 1> {
+    const { rows } = await this.db.query(
+      `
+      SELECT value
+      FROM review_votes
+      WHERE review_id = $1 AND user_id = $2
+      LIMIT 1
+      `,
+      [reviewId, userId],
+    );
+
+    const row = rows[0];
+
+    if (!row || row.value == null) {
+      return 0;
+    }
+
+    const value = Number(row.value);
+    if (value === 1) return 1;
+    if (value === -1) return -1;
+    return 0;
   }
 }

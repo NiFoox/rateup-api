@@ -8,4 +8,5 @@ export interface ReviewVoteRepository {
     downvotes: number;
     score: number;
   }>;
+  getUserVote(reviewId: number, userId: number): Promise<-1 | 0 | 1>;
 }

@@ -97,7 +97,6 @@ export class ReviewCommentController {
 
       const offset = (page - 1) * pageSize;
 
-      // 👇 acá va el método REAL que existe en tu repo
       const comments = await this.repository.getByReviewWithUser(
         reviewId,
         offset,
@@ -109,7 +108,7 @@ export class ReviewCommentController {
         page,
         pageSize,
         count: comments.length,
-        items: comments,
+        data: comments,
       });
     } catch (error) {
       if ((error as any)?.name === 'ZodError') {

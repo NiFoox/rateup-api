@@ -14,11 +14,12 @@ Authorization: Bearer PASTE_JWT_TOKEN_HERE
 GET http://localhost:3000/api/reviews/1
 Content-Type: application/json
 
-### Listar reseñas (paginado opcional, filtros opcionales)
+### Listar reseñas (paginado, filtros opcionales, búsqueda por contenido)
 # - page / pageSize: controlan la paginación
 # - gameId: filtra por juego
 # - userId: filtra por usuario
-GET http://localhost:3000/api/reviews?page=1&pageSize=10&gameId=1&userId=1
+# - search: filtra por contenido de la reseña, nombre de juego y username (ILIKE)
+GET http://localhost:3000/api/reviews?page=1&pageSize=10&search=combate
 Content-Type: application/json
 
 ### Listar reseñas de un usuario específico (para vista de perfil público)
@@ -52,6 +53,9 @@ DELETE http://localhost:3000/api/reviews/1
 Authorization: Bearer PASTE_JWT_TOKEN_HERE
 
 ### Listar mis reseñas (requiere usuario logueado, usa sub del JWT)
+# - page / pageSize: controlan la paginación
+# - gameId: filtra por juego
+# - search: filtra por contenido de la reseña, nombre de juego y username (ILIKE)
 GET http://localhost:3000/api/reviews/me?page=1&pageSize=10
 Content-Type: application/json
 Authorization: Bearer PASTE_JWT_TOKEN_HERE

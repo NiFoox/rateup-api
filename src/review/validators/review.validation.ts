@@ -43,6 +43,10 @@ export const ReviewListQuerySchema = z.object({
     emptyToUndef,
     z.coerce.number().int().positive().optional(),
   ),
+  search: z.preprocess(
+    emptyToUndef,
+    z.string().trim().min(1).optional(),
+  ),
 });
 
 // ---------- Types (DTOs) ----------

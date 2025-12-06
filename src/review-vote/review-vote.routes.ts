@@ -3,7 +3,7 @@ import {
   validateBody,
   validateParams,
 } from '../shared/middlewares/validate.js';
-import { requireAuth } from '../shared/middlewares/auth.js';
+import { requireAuth, optionalAuth } from '../shared/middlewares/auth.js';
 import { ReviewVoteController } from './review-vote.controller.js';
 import {
   ReviewVoteParamsSchema,
@@ -21,13 +21,14 @@ export default function buildReviewVoteRouter(
   // GET /api/reviews/:reviewId/votes
   router.get(
     '/',
+    optionalAuth,
     validateParams(ReviewVoteParamsSchema),
     controller.getSummary.bind(controller),
   );
 
-  // PUT votar / cambiar voto (requiere login)
-  // PUT /api/reviews/:reviewId/votes
-  router.put(
+  // POST upvote / downvote (requiere login)
+  // POST /api/reviews/:reviewId/votes
+  router.post(
     '/',
     requireAuth,
     validateParams(ReviewVoteParamsSchema),

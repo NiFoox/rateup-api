@@ -13,7 +13,8 @@ export interface GameRepository {
     offset: number,
     limit: number,
     opts?: { search?: string; genre?: string },
-  ): Promise<Game[]>;
+  ): Promise<{ data: Game[], total: number }>;
+  
   getAll(): Promise<Game[]>;
 
   getTopRatedGames(

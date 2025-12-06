@@ -21,13 +21,23 @@ export class ReviewVoteController {
 
     const summary = await this.repository.getSummary(reviewId);
 
+    const authReq = req as AuthenticatedRequest;
+    const authUser = authReq.user;
+
+    let userVote: -1 | 0 | 1 = 0;
+    if (authUser) {
+      const userId = Number(authUser.sub);
+      userVote = await this.repository.getUserVote(reviewId, userId);
+    }
+
     res.json({
       reviewId,
       ...summary,
+      userVote,
     });
   }
 
-  // PUT /api/reviews/:reviewId/votes
+  // POST /api/reviews/:reviewId/votes
   async upsert(req: Request, res: Response): Promise<void> {
     try {
       const params: ReviewVoteParamsDTO =
@@ -60,15 +70,24 @@ export class ReviewVoteController {
         value: vote.value,
         ...summary,
       });
-    } catch (error) {
-      if ((error as any)?.name === 'ZodError') {
-        res
-          .status(400)
-          .json({ message: 'Invalid data', details: (error as any).errors });
-        return;
+    } catch (error: any) {
+        if (error?.name === 'ZodError') {
+          res.status(400).json({ 
+            message: 'Invalid data', 
+            details: error.errors 
+          });
+          return;
+        }
+
+        if (error?.code === '23503') {
+          // foreign key violation
+          res.status(404).json({ message: 'Review not found' });
+          return;
+        }
+
+        console.error('Error en ReviewVoteController.upsert:', error);
+        res.status(500).json({ message: 'Internal server error' });
       }
-      res.status(500).json({ message: 'Internal server error' });
-    }
   }
 
   // DELETE /api/reviews/:reviewId/votes

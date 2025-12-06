@@ -15,7 +15,7 @@ import {
 export class GameController {
   constructor(private readonly repo: GameRepository) {}
 
-  // Create
+  // POST /api/games (ADMIN crea juegos)
   async create(req: Request, res: Response) {
     const body: GameCreateDTO =
       (res.locals?.validated?.body as GameCreateDTO) ??
@@ -33,7 +33,7 @@ export class GameController {
     return res.status(201).location(`/games/${saved.id}`).json(saved);
   }
 
-  // Read
+  // GET /api/games/:id (Público)
   async getById(req: Request, res: Response) {
     const params: GameIdParamDTO =
       (res.locals?.validated?.params as GameIdParamDTO) ??
@@ -45,24 +45,38 @@ export class GameController {
       : res.status(404).json({ error: 'Juego no encontrado' });
   }
 
+  // GET /api/games (Público, paginado y con filtros)
   async list(req: Request, res: Response) {
     const q: GameListQueryDTO =
       (res.locals?.validated?.query as GameListQueryDTO) ??
       GameListQuerySchema.parse(req.query);
 
-    const { page, limit, search, genre, all } = q;
+    const page = q.page ?? 1;
+    const limit = q.limit ?? 20;
+    const { search, genre, all } = q;
 
     if (all) {
       const games = await this.repo.getAll();
       return res.json(games);
-    } else {
-      const offset = (page - 1) * limit;
-      const games = await this.repo.getPaginated(offset, limit, { search, genre });
-      return res.json({ page, limit, data: games });
+      // return res.json({ total: games.length, data: games });
     }
+
+    const offset = (page - 1) * limit;
+
+    const { data, total } = await this.repo.getPaginated(offset, limit, {
+      search,
+      genre,
+    });
+
+    return res.json({
+      page,
+      limit,
+      total,
+      data,
+    });
   }
 
-  // Update (PATCH)
+  // PATCH /api/games/:id (ADMIN)
   async patch(req: Request, res: Response) {
     const params: GameIdParamDTO =
       (res.locals?.validated?.params as GameIdParamDTO) ??
@@ -80,7 +94,7 @@ export class GameController {
       : res.status(404).json({ error: 'Juego no encontrado' });
   }
 
-  // Delete
+  // DELETE /api/games/:id (ADMIN)
   async delete(req: Request, res: Response) {
     const params: GameIdParamDTO =
       (res.locals?.validated?.params as GameIdParamDTO) ??

@@ -99,8 +99,8 @@ export class UserService {
       dto.username,
       dto.email,
       passwordHash,
-      dto.roles ?? ['USER'], // por defecto
-      dto.isActive ?? true, // por defecto
+      dto.roles ?? ['USER'],
+      dto.isActive ?? true,
     );
 
     const created = await this.repository.create(user);

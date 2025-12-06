@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { User, type UserRole } from './user.entity.js';
+import { mapPostgresErrorToDomainError } from '../shared/errors/db-errors.js';
 import type {
   UserRepository,
   UserProfileStats,
@@ -142,15 +143,25 @@ export class UserPostgresRepository implements UserRepository {
     }
 
     values.push(id);
+
     const query = `
       UPDATE users
       SET ${fields.join(', ')}
-      WHERE id = $${index}
+      WHERE id = $${values.length}
       RETURNING *
     `;
 
-    const { rows } = await this.db.query(query, values);
-    return rows[0] ? mapRowToUser(rows[0]) : undefined;
+    try {
+      const { rows } = await this.db.query(query, values);
+      const row = rows[0];
+      return row ? mapRowToUser(row) : undefined;
+    } catch (error: any) {
+      const domainError = mapPostgresErrorToDomainError(error);
+      if (domainError) {
+        throw domainError;
+      }
+      throw error;
+    }
   }
 
   async delete(id: number): Promise<boolean> {

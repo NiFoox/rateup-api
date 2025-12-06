@@ -103,9 +103,13 @@ export class UserController {
       });
     }
 
-    if (!isAdmin && (body as any).roles !== undefined) {
+    // Detectar intento de tocar roles o isActive siendo NO admin
+    const wantsToChangeRoles = (body as any).roles !== undefined;
+    const wantsToChangeIsActive = body.isActive !== undefined;
+
+    if (!isAdmin && (wantsToChangeRoles || wantsToChangeIsActive)) {
       return res.status(403).json({
-        error: 'No estás autorizado para modificar roles',
+        error: 'No estás autorizado para modificar roles o estado del usuario',
       });
     }
 
@@ -157,6 +161,21 @@ export class UserController {
     const params: UserIdParamDTO =
       (res.locals?.validated?.params as UserIdParamDTO) ??
       UserIdParamSchema.parse(req.params);
+
+    const authReq = req as AuthenticatedRequest;
+    const authUser = authReq.user;
+
+    if (!authUser) {
+      return res.status(401).json({ error: 'No autenticado' });
+    }
+
+    const isAdmin = authUser.roles?.includes('ADMIN') ?? false;
+
+    if (!isAdmin) {
+      return res.status(403).json({
+        error: 'Solo un administrador puede modificar roles',
+      });
+    }
 
     const deleted = await this.service.delete(params.id);
 

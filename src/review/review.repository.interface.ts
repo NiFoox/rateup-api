@@ -11,7 +11,19 @@ export interface ReviewRepository {
     offset: number,
     limit: number,
     opts?: { gameId?: number; userId?: number },
-  ): Promise<Review[]>;
+  ): Promise<{ data: Review[]; total: number }>;
+
+  getPaginatedWithVotes(
+    offset: number,
+    limit: number,
+    opts?: { gameId?: number; userId?: number ; search?: string },
+  ): Promise<{
+    data: Array<{
+      review: Review;
+      votes: { upvotes: number; downvotes: number; score: number };
+    }>;
+    total: number;
+  }>;
 
   findByIdWithRelations(id: number): Promise<ReviewWithRelationsDTO | null>;
 
